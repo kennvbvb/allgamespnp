@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="รวมเกมการศึกษาแบ่งตามวิชาและระดับชั้น เปิดเล่นได้จากมือถือ" />
+  <title>รวมเกมการศึกษา</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <h1>🎮 รวมเกมการศึกษา</h1>
+      <p class="subtitle">เลือกวิชาและระดับชั้น แล้วกดการ์ดเพื่อเล่นได้เลย</p>
+      <div class="search-box">
+        <span class="search-icon" aria-hidden="true">🔍</span>
+        <input
+          type="search"
+          id="searchInput"
+          placeholder="ค้นหาชื่อเกม…"
+          autocomplete="off"
+          aria-label="ค้นหาเกม"
+        />
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="filters" aria-label="ตัวกรอง">
+      <div class="filter-group">
+        <span class="filter-label">วิชา</span>
+        <div class="chip-row" id="subjectChips"></div>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">ระดับชั้น</span>
+        <div class="chip-row" id="gradeChips"></div>
+      </div>
+    </section>
+
+    <div class="result-bar">
+      <span id="resultCount"></span>
+      <button type="button" id="clearFilters" class="link-btn" hidden>ล้างตัวกรอง</button>
+    </div>
+
+    <section class="game-grid" id="gameGrid" aria-live="polite"></section>
+
+    <p class="empty-state" id="emptyState" hidden>
+      😅 ไม่พบเกมที่ตรงกับเงื่อนไข ลองล้างตัวกรองดูนะ
+    </p>
+  </main>
+
+  <footer class="site-footer">
+    <p>รวมลิงก์เกมจาก Google Apps Script ไว้ในที่เดียว</p>
+  </footer>
+
+  <!-- โมดัลพรีวิวเกม -->
+  <div class="modal" id="gameModal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-emoji" id="modalEmoji" aria-hidden="true">🎮</span>
+          <div>
+            <h2 id="modalTitle">ชื่อเกม</h2>
+            <div class="modal-tags" id="modalTags"></div>
+          </div>
+        </div>
+        <button type="button" class="icon-btn" data-close aria-label="ปิด">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="iframe-wrap">
+          <div class="iframe-loading" id="iframeLoading">
+            <div class="spinner" aria-hidden="true"></div>
+            <span>กำลังโหลดเกม…</span>
+          </div>
+          <iframe
+            id="gameFrame"
+            title="พรีวิวเกม"
+            allow="fullscreen; autoplay; clipboard-write"
+            referrerpolicy="no-referrer"
+          ></iframe>
+        </div>
+        <p class="iframe-hint">
+          ⚠️ ถ้าเกมไม่แสดงในกรอบนี้ ให้กด <strong>เปิดเต็มจอ</strong> เพื่อเล่นในแท็บใหม่
+        </p>
+      </div>
+
+      <div class="modal-footer">
+        <a id="openFull" class="btn btn-primary" href="#" target="_blank" rel="noopener">
+          ↗ เปิดเต็มจอ
+        </a>
+        <button type="button" id="copyLink" class="btn btn-ghost">🔗 คัดลอกลิงก์</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="games.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
