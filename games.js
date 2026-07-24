@@ -21,59 +21,26 @@
 
 const GAMES = [
   {
-    title: "เกมคิดเลขเร็ว",
-    description: "ฝึกบวก ลบ คูณ หาร แข่งกับเวลา 60 วินาที ยิ่งตอบเร็วยิ่งได้คะแนนเยอะ",
-    subject: "คณิตศาสตร์",
-    grades: ["ป.4", "ป.5"],
-    url: "https://script.google.com/macros/s/EXAMPLE_ID_1/exec",
-    emoji: "🔢",
+    title: "ตราดเมืองนี้...ใครดูแล?",
+    description: "เรียนรู้การปกครองส่วนท้องถิ่นผ่านจังหวัดตราด ว่าใครดูแลบ้านเมืองของเรา เล่นแข่งเป็นทีม",
+    subject: "สังคมศึกษาฯ",
+    grades: ["ป.6"],
+    url: "https://script.google.com/macros/s/AKfycbzPaqUlPw0KL-KUXgXky3Zg5KmgCRX1e-bWPKkcRGwWWu4mDoUiBPRVe_fsJNnj38uCLg/exec",
+    emoji: "🏛️",
+    color: "#0e7490",
+  },
+
+  /* ---- เพิ่มเกมใหม่โดยก๊อปปี้เทมเพลตด้านล่างไปวางต่อ แล้วแก้ข้อมูล ----
+  {
+    title: "ชื่อเกม",
+    description: "คำอธิบายสั้นๆ ว่าเกมเกี่ยวกับอะไร",
+    subject: "วิชา",
+    grades: ["ป.6"],
+    url: "https://script.google.com/macros/s/XXXX/exec",
+    emoji: "🎮",
     color: "#4f8ef7",
   },
-  {
-    title: "จับคู่เศษส่วน",
-    description: "เปิดการ์ดจับคู่เศษส่วนกับรูปภาพให้ตรงกัน ฝึกความจำและความเข้าใจเศษส่วน",
-    subject: "คณิตศาสตร์",
-    grades: ["ป.5", "ป.6"],
-    url: "https://script.google.com/macros/s/EXAMPLE_ID_2/exec",
-    emoji: "🧩",
-    color: "#8b5cf6",
-  },
-  {
-    title: "ควิซระบบสุริยะ",
-    description: "ตอบคำถามเกี่ยวกับดาวเคราะห์และระบบสุริยะ 10 ข้อ พร้อมเฉลยละเอียด",
-    subject: "วิทยาศาสตร์",
-    grades: ["ป.4"],
-    url: "https://script.google.com/macros/s/EXAMPLE_ID_3/exec",
-    emoji: "🪐",
-    color: "#f59e0b",
-  },
-  {
-    title: "แฟลชการ์ดคำศัพท์อังกฤษ",
-    description: "ท่องคำศัพท์ภาษาอังกฤษหมวดสัตว์และอาหารด้วยแฟลชการ์ด พลิกดูคำแปลได้",
-    subject: "ภาษาอังกฤษ",
-    grades: ["ป.4", "ป.5", "ป.6"],
-    url: "https://script.google.com/macros/s/EXAMPLE_ID_4/exec",
-    emoji: "🇬🇧",
-    color: "#ef4444",
-  },
-  {
-    title: "เกมสะกดคำภาษาไทย",
-    description: "เรียงตัวอักษรให้เป็นคำที่ถูกต้อง ฝึกสะกดคำและมาตราตัวสะกด",
-    subject: "ภาษาไทย",
-    grades: ["ป.3", "ป.4"],
-    url: "https://script.google.com/macros/s/EXAMPLE_ID_5/exec",
-    emoji: "📝",
-    color: "#10b981",
-  },
-  {
-    title: "ควิซอาเซียนศึกษา",
-    description: "ตอบคำถามธงชาติ เมืองหลวง และวัฒนธรรมของประเทศสมาชิกอาเซียน",
-    subject: "สังคมศึกษา",
-    grades: ["ป.6", "ม.1"],
-    url: "https://script.google.com/macros/s/EXAMPLE_ID_6/exec",
-    emoji: "🌏",
-    color: "#06b6d4",
-  },
+  ------------------------------------------------------------------- */
 ];
 
 // เปิดให้ app.js อ่านข้อมูลได้ (const ที่ระดับบนสุดไม่ผูกกับ window เอง)
