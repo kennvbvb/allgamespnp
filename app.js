@@ -54,6 +54,9 @@
     modal: document.getElementById("gameModal"),
     frame: document.getElementById("gameFrame"),
     frameLoading: document.getElementById("iframeLoading"),
+    frameError: document.getElementById("iframeError"),
+    errOpenNew: document.getElementById("errOpenNew"),
+    errRetry: document.getElementById("errRetry"),
     modalTitle: document.getElementById("modalTitle"),
     modalEmoji: document.getElementById("modalEmoji"),
     modalTags: document.getElementById("modalTags"),
@@ -106,6 +109,7 @@
         state[key] = state[key] === value ? null : value;
         syncChips();
         render();
+        writeFiltersToUrl();
       });
       chip.dataset.value = value;
       container.appendChild(chip);
@@ -123,6 +127,25 @@
       c.classList.toggle("active", on);
       c.setAttribute("aria-pressed", on ? "true" : "false");
     });
+  }
+
+  // ---------- Sync ตัวกรอง/ค้นหา กับ URL (refresh/แชร์ผลลัพธ์ได้) ----------
+  function readFiltersFromUrl() {
+    const p = new URLSearchParams(location.search);
+    state.subject = p.get("subject") || null;
+    state.grade = p.get("grade") || null;
+    state.search = p.get("q") || "";
+    if (el.search) el.search.value = state.search;
+  }
+
+  function writeFiltersToUrl() {
+    const p = new URLSearchParams();
+    if (state.subject) p.set("subject", state.subject);
+    if (state.grade) p.set("grade", state.grade);
+    if (state.search.trim()) p.set("q", state.search.trim());
+    const qs = p.toString();
+    const url = location.pathname + (qs ? "?" + qs : "") + location.hash;
+    if (history.replaceState) history.replaceState(history.state, "", url);
   }
 
   // ---------- Filter ----------
@@ -157,14 +180,19 @@
         })
         .join("");
 
+      const descHtml = (g.description && g.description.trim())
+        ? '<p class="card-desc">' + escapeHtml(g.description) + "</p>"
+        : "";
+
       card.innerHTML =
-        '<span class="card-emoji">' + escapeHtml(g.emoji) + "</span>" +
+        '<span class="card-emoji" aria-hidden="true">' + escapeHtml(g.emoji) + "</span>" +
         '<h3 class="card-title">' + escapeHtml(g.title) + "</h3>" +
-        '<p class="card-desc">' + escapeHtml(g.description || "") + "</p>" +
+        descHtml +
         '<div class="card-tags">' +
           '<span class="tag tag-subject">' + escapeHtml(g.subject || "") + "</span>" +
           gradeTags +
-        "</div>";
+        "</div>" +
+        '<span class="card-cta" aria-hidden="true">▶ เล่นเกม</span>';
 
       card.addEventListener("click", function () {
         openModal(g, true);
@@ -225,6 +253,34 @@
 
   // ---------- Modal ----------
   let modalOpener = null;
+  let frameTimer = null;
+  let currentGameUrl = "";
+
+  // โหลดเกมในกรอบ พร้อม timeout + สถานะ error (มีปุ่มลองใหม่/เปิดแท็บใหม่)
+  function loadGameFrame(url) {
+    currentGameUrl = url;
+    clearTimeout(frameTimer);
+    el.frameError.hidden = true;
+    el.frame.style.visibility = "hidden";
+    el.frameLoading.style.display = "flex";
+    el.frame.onload = function () {
+      clearTimeout(frameTimer);
+      el.frameLoading.style.display = "none";
+      el.frame.style.visibility = "visible";
+    };
+    el.frame.src = url;
+    // ถ้าไม่โหลดใน 9 วินาที (อาจถูกบล็อกไม่ให้ฝัง iframe หรือช้า) → แสดงทางเลือก
+    frameTimer = setTimeout(function () {
+      el.frameLoading.style.display = "none";
+      el.frameError.hidden = false;
+    }, 9000);
+  }
+
+  if (el.errRetry) {
+    el.errRetry.addEventListener("click", function () {
+      if (currentGameUrl) loadGameFrame(currentGameUrl);
+    });
+  }
 
   function openModal(g, pushHistory) {
     el.modalTitle.textContent = g.title;
@@ -238,16 +294,12 @@
         .join("");
 
     el.openFull.href = g.url;
+    if (el.errOpenNew) el.errOpenNew.href = g.url;
     el.copyLink.dataset.url = g.url;
     el.copyLink.textContent = "🔗 คัดลอกลิงก์";
     el.frame.title = "พรีวิวเกม " + g.title;
 
-    // โหลด iframe
-    el.frameLoading.style.display = "flex";
-    el.frame.src = g.url;
-    el.frame.onload = function () {
-      el.frameLoading.style.display = "none";
-    };
+    loadGameFrame(g.url);
 
     modalOpener = document.activeElement;
     el.modal.hidden = false;
@@ -268,8 +320,12 @@
   // ปิดจริง (คืนสถานะทุกอย่าง) — ไม่ยุ่งกับ history
   function hideModal() {
     if (el.modal.hidden) return;
+    clearTimeout(frameTimer);
     el.modal.hidden = true;
+    el.frame.onload = null;
     el.frame.src = "about:blank";
+    el.frameError.hidden = true;
+    el.frameLoading.style.display = "none";
     document.body.classList.remove("modal-open");
     backgroundInert(false);
     if (modalOpener && typeof modalOpener.focus === "function") {
@@ -294,6 +350,7 @@
   el.search.addEventListener("input", function () {
     state.search = el.search.value;
     render();
+    writeFiltersToUrl();
   });
 
   el.clearFilters.addEventListener("click", function () {
@@ -303,6 +360,7 @@
     el.search.value = "";
     syncChips();
     render();
+    writeFiltersToUrl();
   });
 
   el.modal.addEventListener("click", function (e) {
@@ -453,8 +511,10 @@
   }
 
   // ---------- Init ----------
+  readFiltersFromUrl();
   buildChips(el.subjectChips, uniqueSubjects(), "subject");
   buildChips(el.gradeChips, uniqueGrades(), "grade");
+  syncChips();
   render();
   openFromHash();
   showAnnouncement();

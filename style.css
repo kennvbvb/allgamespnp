@@ -208,13 +208,22 @@ body {
   margin: 0;
   font-size: 1.12rem;
   font-weight: 800;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .card-desc {
   margin: 0;
   font-size: 0.88rem;
   color: var(--text-muted);
-  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .card-tags {
@@ -222,6 +231,18 @@ body {
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 2px;
+}
+
+/* ปุ่มชวนกด — ดันไปอยู่ท้ายการ์ดเสมอเพื่อให้ทุกใบเรียงสวย */
+.card-cta {
+  margin-top: auto;
+  align-self: flex-start;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--card-color, var(--primary));
+  padding: 6px 14px;
+  border-radius: 999px;
 }
 
 .tag {
@@ -544,6 +565,24 @@ body {
   font-size: 0.9rem;
 }
 
+.iframe-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  text-align: center;
+  background: var(--surface);
+}
+.iframe-error[hidden] { display: none; }
+
+.iframe-error-title { margin: 0; font-weight: 700; font-size: 1rem; }
+.iframe-error-sub { margin: 0; font-size: 0.86rem; color: var(--text-muted); max-width: 360px; }
+.iframe-error-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 8px; }
+
 .spinner {
   width: 34px;
   height: 34px;
@@ -611,7 +650,8 @@ body.modal-open {
 /* ---------- Mobile ---------- */
 @media (max-width: 560px) {
   .game-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    /* จอแคบมาก (≈≤360px) = 1 คอลัมน์, กว้างขึ้นเป็น 2 คอลัมน์ */
+    grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
     gap: 12px;
   }
 

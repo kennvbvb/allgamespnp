@@ -20,7 +20,7 @@ const GAMES = [
   {
     "id": "game-2",
     "title": "ตะลุย 4 ภาค ล่าขุมทรัพย์วัฒนธรรมไทย",
-    "description": "",
+    "description": "ผจญภัย 4 ภาค เรียนรู้วัฒนธรรมท้องถิ่นไทยแต่ละภูมิภาค",
     "subject": "สังคมศึกษาฯ",
     "grades": [
       "ป.4"
@@ -31,7 +31,7 @@ const GAMES = [
   {
     "id": "game-3",
     "title": "แบบทดสอบท้องถิ่นกับชุมชน",
-    "description": "",
+    "description": "แบบทดสอบเรื่องท้องถิ่นและชุมชนของเรา",
     "subject": "สังคมศึกษาฯ",
     "grades": [
       "ป.5"
@@ -42,7 +42,7 @@ const GAMES = [
   {
     "id": "game-4",
     "title": "วัฒนธรรมน่ารู้",
-    "description": "",
+    "description": "เรียนรู้ขนบธรรมเนียมและวัฒนธรรมไทยแบบสนุกๆ",
     "subject": "สังคมศึกษาฯ",
     "grades": [
       "ป.4"
@@ -53,7 +53,7 @@ const GAMES = [
   {
     "id": "game-5",
     "title": "อารยธรรมจีนกับไทยและอาเซียน",
-    "description": "",
+    "description": "เชื่อมโยงอารยธรรมจีนกับไทยและเพื่อนบ้านอาเซียน",
     "subject": "สังคมศึกษาฯ",
     "grades": [
       "ป.5"
@@ -64,7 +64,7 @@ const GAMES = [
   {
     "id": "game-6",
     "title": "4 กุญแจพิทักษ์สิทธิเด็ก",
-    "description": "",
+    "description": "เรียนรู้สิทธิเด็ก 4 ด้านผ่านภารกิจ",
     "subject": "สังคมศึกษาฯ",
     "grades": [
       "ป.4"
@@ -75,7 +75,7 @@ const GAMES = [
   {
     "id": "game-7",
     "title": "ศึกปัญญา รัตนโกสินทร์รุ่งเรือง",
-    "description": "",
+    "description": "ตอบคำถามประวัติศาสตร์สมัยรัตนโกสินทร์",
     "subject": "สังคมศึกษาฯ",
     "grades": [
       "ป.6"
@@ -86,7 +86,7 @@ const GAMES = [
   {
     "id": "game-8",
     "title": "แบบทดสอบ กฎหมายน่ารู้",
-    "description": "",
+    "description": "แบบทดสอบกฎหมายใกล้ตัวที่ควรรู้",
     "subject": "สังคมศึกษาฯ",
     "grades": [
       "ป.6"
@@ -97,7 +97,7 @@ const GAMES = [
   {
     "id": "game-9",
     "title": "กระดานภารกิจทีมประชาธิปไตย",
-    "description": "",
+    "description": "เกมกระดานเรียนรู้ประชาธิปไตย เล่นเป็นทีม",
     "subject": "สังคมศึกษาฯ",
     "grades": [
       "ป.4"
@@ -108,7 +108,7 @@ const GAMES = [
   {
     "id": "game-10",
     "title": "นักโบราณคดีน้อย",
-    "description": "",
+    "description": "สวมบทนักโบราณคดี เรียนรู้หลักฐานทางประวัติศาสตร์",
     "subject": "สังคมศึกษาฯ",
     "grades": [
       "ป.4"
@@ -119,7 +119,7 @@ const GAMES = [
   {
     "id": "game-11",
     "title": "ภารกิจทะเบียนราษฎร",
-    "description": "",
+    "description": "เรียนรู้งานทะเบียนราษฎรและเอกสารสำคัญของพลเมือง",
     "subject": "สังคมศึกษาฯ",
     "grades": [
       "ป.6"
@@ -130,7 +130,7 @@ const GAMES = [
   {
     "id": "game-12",
     "title": "ภารกิจพลเมืองดี รู้สิทธิ รู้หน้าที่",
-    "description": "",
+    "description": "เรียนรู้สิทธิและหน้าที่ของพลเมืองดี",
     "subject": "สังคมศึกษาฯ",
     "grades": [
       "ป.5"
@@ -141,7 +141,7 @@ const GAMES = [
   {
     "id": "game-13",
     "title": "เกมพลเมืองดี",
-    "description": "",
+    "description": "ฝึกเป็นพลเมืองดีในสังคม",
     "subject": "สังคมศึกษาฯ",
     "grades": [
       "ป.4"
@@ -152,7 +152,7 @@ const GAMES = [
   {
     "id": "game-14",
     "title": "ฮีโร่พิทักษ์สิทธิเด็ก",
-    "description": "",
+    "description": "สวมบทฮีโร่ปกป้องสิทธิเด็ก",
     "subject": "สังคมศึกษาฯ",
     "grades": [
       "ป.5"
@@ -163,7 +163,7 @@ const GAMES = [
   {
     "id": "game-15",
     "title": "เกมธรรมะหรรษา",
-    "description": "",
+    "description": "เรียนหลักธรรมพุทธศาสนาแบบสนุกๆ",
     "subject": "สังคมศึกษาฯ",
     "grades": [
       "ป.3"
@@ -174,7 +174,7 @@ const GAMES = [
   {
     "id": "game-16",
     "title": "เกมส์พิทักษ์สิทธิเด็ก",
-    "description": "",
+    "description": "เรียนรู้และปกป้องสิทธิเด็ก",
     "subject": "สังคมศึกษาฯ",
     "grades": [
       "ป.5"
@@ -185,7 +185,7 @@ const GAMES = [
   {
     "id": "game-17",
     "title": "กระดานตลาดทุเรียน",
-    "description": "",
+    "description": "เกมกระดานจำลองตลาดทุเรียน บูรณาการหลายวิชา",
     "subject": "บูรณาการ",
     "grades": [
       "ป.5"
@@ -207,7 +207,7 @@ const GAMES = [
   {
     "id": "game-19",
     "title": "ท่องแดนธรรม นำปัญญา",
-    "description": "",
+    "description": "ท่องโลกธรรมะ เรียนรู้หลักธรรมนำปัญญา",
     "subject": "สังคมศึกษาฯ",
     "grades": [
       "ป.6"

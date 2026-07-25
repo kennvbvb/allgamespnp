@@ -76,6 +76,14 @@
             <div class="spinner" aria-hidden="true"></div>
             <span>กำลังโหลดเกม…</span>
           </div>
+          <div class="iframe-error" id="iframeError" hidden>
+            <p class="iframe-error-title">⏳ เกมนี้แสดงในกรอบไม่ได้ หรือใช้เวลาโหลดนาน</p>
+            <p class="iframe-error-sub">บางเกมไม่อนุญาตให้ฝังในกรอบ — เปิดในแท็บใหม่เพื่อเล่นได้เลย</p>
+            <div class="iframe-error-actions">
+              <a id="errOpenNew" class="btn btn-primary" target="_blank" rel="noopener">↗ เปิดในแท็บใหม่</a>
+              <button type="button" id="errRetry" class="btn btn-ghost">↻ ลองใหม่</button>
+            </div>
+          </div>
           <iframe
             id="gameFrame"
             title="พรีวิวเกม"
@@ -84,13 +92,13 @@
           ></iframe>
         </div>
         <p class="iframe-hint">
-          ⚠️ ถ้าเกมไม่แสดงในกรอบนี้ ให้กด <strong>เปิดเต็มจอ</strong> เพื่อเล่นในแท็บใหม่
+          ⚠️ ถ้าเกมไม่แสดงในกรอบนี้ ให้กด <strong>เปิดในแท็บใหม่</strong> เพื่อเล่นเต็มหน้าจอ
         </p>
       </div>
 
       <div class="modal-footer">
         <a id="openFull" class="btn btn-primary" href="#" target="_blank" rel="noopener">
-          ↗ เปิดเต็มจอ
+          ↗ เปิดในแท็บใหม่
         </a>
         <button type="button" id="copyLink" class="btn btn-ghost">🔗 คัดลอกลิงก์</button>
       </div>
