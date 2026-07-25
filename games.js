@@ -74,6 +74,16 @@ const GAMES = [
     ],
     "url": "https://script.google.com/macros/s/AKfycbwsO2Okq_20whV8_DIGeMy02OwYYQxLIjKqUPWaXtt7gomK6vzg2KBYG-0BXbGArm5OVQ/exec",
     "color": "#064aa2"
+  },
+  {
+    "title": "แบบทดสอบ กฎหมายน่ารู้",
+    "description": "",
+    "subject": "สังคมศึกษาฯ",
+    "grades": [
+      "ป.6"
+    ],
+    "url": "https://script.google.com/macros/s/AKfycbySNoetU34kkLWr7NryrCSehPATht0OXC5Xm5J-DdDltFl84_naVh636613DvRNrn9o/exec",
+    "color": "#4200bd"
   }
 ];
 
