@@ -138,9 +138,32 @@
       </details>
     </section>
 
+    <!-- ขั้นที่ 4: ประกาศหน้าเว็บ -->
+    <section class="admin-card">
+      <h2 class="admin-h2">4. ประกาศหน้าเว็บ <span class="step-hint">(ป๊อปอัปตอนนักเรียนเข้าเว็บ)</span></h2>
+      <label class="checkline switchline">
+        <input type="checkbox" id="annEnabled" />
+        <span>เปิดแสดงประกาศ</span>
+      </label>
+      <label class="field">
+        <span>หัวข้อ</span>
+        <input type="text" id="annTitle" maxlength="120" placeholder="📢 ประกาศ" />
+      </label>
+      <label class="field">
+        <span>เนื้อหา (ขึ้นบรรทัดใหม่ได้)</span>
+        <textarea id="annMessage" rows="4" placeholder="พิมพ์ข้อความประกาศที่นี่…"></textarea>
+      </label>
+      <div class="btn-row">
+        <button type="button" id="btnSaveAnnounce" class="btn btn-primary">💾 บันทึกประกาศขึ้นเว็บ</button>
+        <button type="button" id="btnReloadAnnounce" class="btn btn-ghost">↻ โหลดใหม่จาก GitHub</button>
+      </div>
+      <p class="status" id="annStatus"></p>
+    </section>
+
   </main>
 
   <script src="games.js"></script>
+  <script src="announcement.js"></script>
   <script src="admin.js"></script>
 </body>
 </html>

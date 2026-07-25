@@ -285,9 +285,63 @@
   // รองรับการเปลี่ยน hash ระหว่างใช้งาน (แชร์ลิงก์/ปุ่ม back-forward)
   window.addEventListener("hashchange", openFromHash);
 
+  // ---------- ป๊อปอัปประกาศ (announcement.js) ----------
+  function announceSignature(a) {
+    // ลายเซ็นข้อความ ใช้เช็คว่าเปลี่ยนไหม (ถ้าเปลี่ยนจะแสดงใหม่แม้เคยกดไม่แสดงอีก)
+    return (a.title || "") + "" + (a.message || "");
+  }
+
+  function showAnnouncement() {
+    const a = window.ANNOUNCEMENT;
+    if (!a || !a.enabled || !(a.message || a.title)) return;
+
+    const sig = announceSignature(a);
+    try {
+      if (localStorage.getItem("gamehub_announce_dismissed") === sig) return;
+    } catch (e) { /* localStorage ปิดอยู่ ก็แสดงตามปกติ */ }
+
+    const overlay = document.createElement("div");
+    overlay.className = "announce-overlay";
+
+    const msgHtml = escapeHtml(a.message || "").replace(/\n/g, "<br>");
+    overlay.innerHTML =
+      '<div class="announce-box" role="dialog" aria-modal="true" aria-labelledby="announceTitle">' +
+        '<button type="button" class="announce-close" aria-label="ปิด">✕</button>' +
+        '<h2 class="announce-title" id="announceTitle">' + escapeHtml(a.title || "ประกาศ") + "</h2>" +
+        '<div class="announce-msg">' + msgHtml + "</div>" +
+        '<label class="announce-hide"><input type="checkbox" id="announceHide" /> ไม่แสดงข้อความนี้อีก</label>' +
+        '<button type="button" class="btn btn-primary announce-ok">รับทราบ</button>' +
+      "</div>";
+
+    function close() {
+      const hide = overlay.querySelector("#announceHide");
+      if (hide && hide.checked) {
+        try { localStorage.setItem("gamehub_announce_dismissed", sig); } catch (e) { /* ignore */ }
+      }
+      overlay.remove();
+      document.body.classList.remove("modal-open");
+    }
+
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay) close();
+    });
+    overlay.querySelector(".announce-close").addEventListener("click", close);
+    overlay.querySelector(".announce-ok").addEventListener("click", close);
+    document.addEventListener("keydown", function onEsc(e) {
+      if (e.key === "Escape" && document.body.contains(overlay)) {
+        close();
+        document.removeEventListener("keydown", onEsc);
+      }
+    });
+
+    document.body.appendChild(overlay);
+    document.body.classList.add("modal-open");
+  }
+
   // ---------- Init ----------
   buildChips(el.subjectChips, uniqueSubjects(), "subject");
   buildChips(el.gradeChips, uniqueGrades(), "grade");
   render();
   openFromHash();
+  showAnnouncement();
 })();
