@@ -11,10 +11,11 @@ permissions:
   pages: write
   id-token: write
 
-# กันไม่ให้ deploy ซ้อนกัน แต่ไม่ตัด run ที่กำลังทำอยู่
+# push/commit ใหม่ให้ยกเลิก deploy เก่าที่ยังค้าง (latest wins) กัน error
+# "in progress deployment" เวลามีหลาย commit ติดกัน (เช่น commit ผ่านหน้า admin บ่อยๆ)
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
