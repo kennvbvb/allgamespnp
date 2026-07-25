@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>จัดการเกม (สำหรับครู) · รวมเกมการศึกษา</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="admin.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <h1>⚙️ จัดการเกม</h1>
+      <p class="subtitle">เพิ่ม/แก้/ลบเกม แล้วกด “บันทึกขึ้นเว็บ” นักเรียนทุกคนจะเห็นภายใน ~1 นาที</p>
+      <p class="subtitle"><a class="header-link" href="index.html">← กลับหน้าเว็บเกม</a></p>
+    </div>
+  </header>
+
+  <main class="container admin">
+
+    <!-- ขั้นที่ 1: เชื่อมต่อ GitHub -->
+    <section class="admin-card">
+      <h2 class="admin-h2">1. เชื่อมต่อ GitHub <span class="step-hint">(ทำครั้งเดียว เครื่องนี้จำให้)</span></h2>
+      <details class="help">
+        <summary>วิธีสร้าง Token (กดดู)</summary>
+        <ol>
+          <li>เปิด <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a> (Fine-grained token)</li>
+          <li><strong>Repository access</strong> → Only select repositories → เลือก <code>allgamespnp</code></li>
+          <li><strong>Permissions</strong> → Repository permissions → <strong>Contents</strong> → เลือก <strong>Read and write</strong></li>
+          <li>กด Generate token แล้วคัดลอกมาวางในช่องด้านล่าง</li>
+        </ol>
+        <p class="warn">⚠️ Token นี้เก็บไว้ในเบราว์เซอร์เครื่องนี้เท่านั้น ไม่ถูกอัปโหลดขึ้นเว็บ และนักเรียนไม่ต้องมี — อย่าใช้บนเครื่องสาธารณะ</p>
+      </details>
+
+      <div class="field-grid">
+        <label class="field">
+          <span>เจ้าของ repo (owner)</span>
+          <input type="text" id="cfgOwner" value="kennvbvb" />
+        </label>
+        <label class="field">
+          <span>repo</span>
+          <input type="text" id="cfgRepo" value="allgamespnp" />
+        </label>
+        <label class="field">
+          <span>branch</span>
+          <input type="text" id="cfgBranch" value="main" />
+        </label>
+        <label class="field">
+          <span>ไฟล์ข้อมูล (path)</span>
+          <input type="text" id="cfgPath" value="games.js" />
+        </label>
+      </div>
+      <label class="field">
+        <span>GitHub Token</span>
+        <input type="password" id="cfgToken" placeholder="github_pat_…" autocomplete="off" />
+      </label>
+      <label class="checkline">
+        <input type="checkbox" id="cfgRemember" checked />
+        <span>จำ token ไว้ในเบราว์เซอร์นี้</span>
+      </label>
+
+      <div class="btn-row">
+        <button type="button" id="btnTest" class="btn btn-primary">🔌 ทดสอบการเชื่อมต่อ</button>
+        <button type="button" id="btnForget" class="btn btn-ghost">🗑️ ลืม token เครื่องนี้</button>
+      </div>
+      <p class="status" id="connStatus"></p>
+    </section>
+
+    <!-- ขั้นที่ 2: ฟอร์มเพิ่ม/แก้ไข -->
+    <section class="admin-card">
+      <h2 class="admin-h2" id="formHeading">2. เพิ่มเกมใหม่</h2>
+      <form id="gameForm" autocomplete="off">
+        <input type="hidden" id="editIndex" value="-1" />
+        <div class="field-grid">
+          <label class="field field-wide">
+            <span>ชื่อเกม *</span>
+            <input type="text" id="fTitle" required maxlength="120" />
+          </label>
+          <label class="field field-wide">
+            <span>คำอธิบายสั้นๆ</span>
+            <input type="text" id="fDesc" maxlength="240" />
+          </label>
+          <label class="field">
+            <span>วิชา *</span>
+            <input type="text" id="fSubject" list="subjectList" required maxlength="60" />
+            <datalist id="subjectList"></datalist>
+          </label>
+          <label class="field field-wide">
+            <span>ลิงก์เกม (URL) *</span>
+            <input type="url" id="fUrl" required placeholder="https://script.google.com/macros/s/…/exec" />
+          </label>
+          <label class="field">
+            <span>ไอคอน (emoji)</span>
+            <input type="text" id="fEmoji" maxlength="4" placeholder="🎮" />
+          </label>
+          <label class="field">
+            <span>สีธีมการ์ด</span>
+            <input type="color" id="fColor" value="#4f8ef7" />
+          </label>
+        </div>
+
+        <div class="field">
+          <span class="field-label-inline">ระดับชั้น * (เลือกได้หลายชั้น)</span>
+          <div class="grade-picker" id="gradePicker"></div>
+          <input type="text" id="fGradeCustom" placeholder="เพิ่มระดับชั้นอื่น เช่น ปวช.1 (คั่นด้วยจุลภาค)" />
+        </div>
+
+        <div class="btn-row">
+          <button type="submit" class="btn btn-primary" id="btnSaveGame">➕ เพิ่มเข้ารายการ</button>
+          <button type="button" class="btn btn-ghost" id="btnResetForm">ล้างฟอร์ม</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ขั้นที่ 3: รายการเกม + commit -->
+    <section class="admin-card">
+      <h2 class="admin-h2">3. รายการเกม <span class="count-pill" id="listCount">0</span></h2>
+      <p class="status" id="listNote">กำลังโหลดข้อมูลปัจจุบัน…</p>
+      <ul class="admin-list" id="gameList"></ul>
+
+      <div class="commit-bar">
+        <div class="btn-row">
+          <button type="button" id="btnCommit" class="btn btn-primary btn-lg">💾 บันทึกขึ้นเว็บ (commit)</button>
+          <button type="button" id="btnReload" class="btn btn-ghost">↻ โหลดใหม่จาก GitHub</button>
+        </div>
+        <p class="status" id="commitStatus"></p>
+      </div>
+
+      <details class="help backup">
+        <summary>สำรอง/กู้คืนข้อมูล (JSON)</summary>
+        <div class="btn-row">
+          <button type="button" id="btnExport" class="btn btn-ghost">⬇️ ดาวน์โหลด JSON</button>
+          <button type="button" id="btnImport" class="btn btn-ghost">⬆️ นำเข้าจาก JSON ที่วาง</button>
+        </div>
+        <textarea id="importBox" rows="5" placeholder='วาง JSON ที่นี่ แล้วกด "นำเข้าจาก JSON ที่วาง"'></textarea>
+      </details>
+    </section>
+
+  </main>
+
+  <script src="games.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

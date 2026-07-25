@@ -257,6 +257,17 @@ body {
   font-size: 0.85rem;
 }
 
+.site-footer .admin-entry {
+  color: var(--text-muted);
+  text-decoration: none;
+  opacity: 0.75;
+}
+
+.site-footer .admin-entry:hover {
+  color: var(--primary);
+  opacity: 1;
+}
+
 /* ---------- Modal ---------- */
 .modal {
   position: fixed;
