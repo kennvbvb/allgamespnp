@@ -1,47 +1,80 @@
 /* ============================================================
-   📚 รายการเกมทั้งหมด — แก้ไฟล์นี้ไฟล์เดียวเมื่อต้องการเพิ่ม/แก้เกม
-   ============================================================
-
-   วิธีเพิ่มเกมใหม่: ก๊อปปี้บล็อก { ... }, ไปวางต่อท้าย แล้วแก้ข้อมูล
-
-   ฟิลด์ที่ต้องใส่:
-     title       ชื่อเกม
-     description คำอธิบายสั้นๆ ว่าเกมเกี่ยวกับอะไร
-     subject     วิชา (พิมพ์อะไรก็ได้ ปุ่มกรองจะสร้างให้อัตโนมัติ)
-     grades      ระดับชั้น ใส่ได้หลายชั้น เช่น ["ป.4", "ป.5"]
-                 (ใช้รูปแบบ ป.1–ป.6, ม.1–ม.6 เพื่อให้เรียงลำดับถูก)
-     url         ลิงก์เกม Google Apps Script (ลงท้าย /exec)
-
-   ฟิลด์เสริม (ไม่ใส่ก็ได้):
-     emoji       ไอคอนบนการ์ด (ไม่ใส่ = 🎮)
-     color       สีธีมการ์ด เช่น "#4f8ef7" (ไม่ใส่ = เลือกให้อัตโนมัติ)
-
-   ⚠️ อย่าลืมเครื่องหมายจุลภาค ( , ) คั่นระหว่างเกมแต่ละบล็อก
+   รายการเกมทั้งหมด — ไฟล์นี้แก้ผ่านหน้า "จัดการเกม" (admin.html)
+   หรือจะแก้มือก็ได้ (เป็น JSON ปกติ)
    ============================================================ */
 
 const GAMES = [
   {
-    title: "ตราดเมืองนี้...ใครดูแล?",
-    description: "เรียนรู้การปกครองส่วนท้องถิ่นผ่านจังหวัดตราด ว่าใครดูแลบ้านเมืองของเรา เล่นแข่งเป็นทีม",
-    subject: "สังคมศึกษาฯ",
-    grades: ["ป.6"],
-    url: "https://script.google.com/macros/s/AKfycbzPaqUlPw0KL-KUXgXky3Zg5KmgCRX1e-bWPKkcRGwWWu4mDoUiBPRVe_fsJNnj38uCLg/exec",
-    emoji: "🏛️",
-    color: "#0e7490",
+    "title": "ตราดเมืองนี้...ใครดูแล?",
+    "description": "เรียนรู้การปกครองส่วนท้องถิ่นผ่านจังหวัดตราด ว่าใครดูแลบ้านเมืองของเรา เล่นแข่งเป็นทีม",
+    "subject": "สังคมศึกษาฯ",
+    "grades": [
+      "ป.6"
+    ],
+    "url": "https://script.google.com/macros/s/AKfycbzPaqUlPw0KL-KUXgXky3Zg5KmgCRX1e-bWPKkcRGwWWu4mDoUiBPRVe_fsJNnj38uCLg/exec",
+    "emoji": "🏛️",
+    "color": "#0e7490"
   },
-
-  /* ---- เพิ่มเกมใหม่โดยก๊อปปี้เทมเพลตด้านล่างไปวางต่อ แล้วแก้ข้อมูล ----
   {
-    title: "ชื่อเกม",
-    description: "คำอธิบายสั้นๆ ว่าเกมเกี่ยวกับอะไร",
-    subject: "วิชา",
-    grades: ["ป.6"],
-    url: "https://script.google.com/macros/s/XXXX/exec",
-    emoji: "🎮",
-    color: "#4f8ef7",
+    "title": "ตะลุย 4 ภาค ล่าขุมทรัพย์วัฒนธรรมไทย",
+    "description": "",
+    "subject": "สังคมศึกษาฯ",
+    "grades": [
+      "ป.4"
+    ],
+    "url": "https://script.google.com/macros/s/AKfycbyh06btl1iUVI-qbQX5Kd3M6_xMliVz3cWxvXnCjyIFyMAfmw9NkxnNuRAqCedLWR4V/exec",
+    "color": "#4f8ef7"
   },
-  ------------------------------------------------------------------- */
+  {
+    "title": "แบบทดสอบท้องถิ่นกับชุมชน",
+    "description": "",
+    "subject": "สังคมศึกษาฯ",
+    "grades": [
+      "ป.5"
+    ],
+    "url": "https://script.google.com/macros/s/AKfycbx90G6p6Bwe8y9ZFEqPg79t4sA6um5bcCN8ubikzlUr_PbwgaJgJ5T1jYeWboYSWE3E/exec",
+    "color": "#4f8ef7"
+  },
+  {
+    "title": "วัฒนธรรมน่ารู้",
+    "description": "",
+    "subject": "สังคมศึกษาฯ",
+    "grades": [
+      "ป.4"
+    ],
+    "url": "https://script.google.com/macros/s/AKfycby0M2jFxxZddwDYLjEyDEhqUP4i9kLUWyiv88jAN2HnWLB_Porfgdq-LYNEQKgjpOwe/exec",
+    "color": "#ee291b"
+  },
+  {
+    "title": "อารยธรรมจีนกับไทยและอาเซียน",
+    "description": "",
+    "subject": "สังคมศึกษาฯ",
+    "grades": [
+      "ป.5"
+    ],
+    "url": "https://script.google.com/macros/s/AKfycbx7mQ35S7qcyknVPWIuIyK4BxdRVUOVlJTC6dFye9D0NRd1SehgYxXLVRF1GjihEEIwOQ/exec",
+    "color": "#e90101"
+  },
+  {
+    "title": "4 กุญแจพิทักษ์สิทธิเด็ก",
+    "description": "",
+    "subject": "สังคมศึกษาฯ",
+    "grades": [
+      "ป.4"
+    ],
+    "url": "https://script.google.com/macros/s/AKfycbxT0mM8453Aii25tT1AwgroTrN0tKnEgw0rtBCYEZDRAXMQVoNwFCWyDO3Ybxsl4_Y/exec",
+    "color": "#7119f5"
+  },
+  {
+    "title": "ศึกปัญญา รัตนโกสินทร์รุ่งเรือง",
+    "description": "",
+    "subject": "สังคมศึกษาฯ",
+    "grades": [
+      "ป.6"
+    ],
+    "url": "https://script.google.com/macros/s/AKfycbwsO2Okq_20whV8_DIGeMy02OwYYQxLIjKqUPWaXtt7gomK6vzg2KBYG-0BXbGArm5OVQ/exec",
+    "color": "#064aa2"
+  }
 ];
 
-// เปิดให้ app.js อ่านข้อมูลได้ (const ที่ระดับบนสุดไม่ผูกกับ window เอง)
 window.GAMES = GAMES;
