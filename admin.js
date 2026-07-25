@@ -21,6 +21,11 @@
   // รายการเกมที่กำลังแก้ (เริ่มจากข้อมูลที่ bundle มากับหน้า = games.js ปัจจุบัน)
   let games = deepCopy(Array.isArray(window.GAMES) ? window.GAMES : []);
 
+  // สถานะสำหรับกันเขียนทับ + เตือนงานที่ยังไม่บันทึก
+  let gamesBaseSha = null;   // sha ของ games.js ตอนโหลดล่าสุด (null = ยังไม่เคยโหลดจาก GitHub)
+  let annBaseSha = null;     // sha ของ announcement.js ตอนโหลดล่าสุด
+  let dirty = false;         // มีการแก้รายการเกมที่ยังไม่ commit หรือไม่
+
   // ---------- DOM ----------
   const $ = function (id) { return document.getElementById(id); };
   const el = {
@@ -36,12 +41,32 @@
     btnCommit: $("btnCommit"), btnReload: $("btnReload"), commitStatus: $("commitStatus"),
     btnExport: $("btnExport"), btnImport: $("btnImport"), importBox: $("importBox"),
     annEnabled: $("annEnabled"), annTitle: $("annTitle"), annMessage: $("annMessage"),
+    annImportant: $("annImportant"),
     btnSaveAnnounce: $("btnSaveAnnounce"), btnReloadAnnounce: $("btnReloadAnnounce"),
     annStatus: $("annStatus"),
+    publishBar: $("publishBar"), btnCommitSticky: $("btnCommitSticky"), dirtyBadge: $("dirtyBadge"),
   };
 
   // ---------- Utils ----------
   function deepCopy(x) { return JSON.parse(JSON.stringify(x)); }
+
+  // สร้าง id (slug) คงที่ ไม่ซ้ำ และไม่เป็นเลขล้วน (กันชนกับลิงก์เลขเดิม)
+  function makeId(title, existing) {
+    let b = String(title || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    if (!b || /^[0-9]+$/.test(b)) b = "game";
+    let id = b, n = 2;
+    while (existing.indexOf(id) !== -1) { id = b + "-" + n++; }
+    return id;
+  }
+
+  // ให้ทุกเกมมี id (เกมเก่าที่ยังไม่มี/นำเข้ามาไม่มี ก็สร้างให้ ไม่ซ้ำ)
+  function ensureIds(list) {
+    const used = [];
+    list.forEach(function (g) { if (g.id) used.push(g.id); });
+    list.forEach(function (g) {
+      if (!g.id) { g.id = makeId(g.title, used); used.push(g.id); }
+    });
+  }
 
   function escapeHtml(str) {
     return String(str == null ? "" : str).replace(/[&<>"']/g, function (c) {
@@ -158,9 +183,11 @@
       "/* ============================================================\n" +
       "   รายการเกมทั้งหมด — ไฟล์นี้แก้ผ่านหน้า \"จัดการเกม\" (admin.html)\n" +
       "   หรือจะแก้มือก็ได้ (เป็น JSON ปกติ)\n" +
+      "   หมายเหตุ: ห้ามเปลี่ยน \"id\" ของเกมที่เผยแพร่แล้ว (ลิงก์แชร์อ้างจาก id)\n" +
       "   ============================================================ */\n\n";
     const clean = list.map(function (g) {
       const o = {
+        id: g.id || "",
         title: g.title || "",
         description: g.description || "",
         subject: g.subject || "",
@@ -230,18 +257,21 @@
       const li = document.createElement("li");
       li.className = "admin-list-item";
       li.style.setProperty("--item-color", g.color || "#4f8ef7");
+      const t = escapeHtml(g.title);
+      const upDis = i === 0 ? " disabled" : "";
+      const downDis = i === games.length - 1 ? " disabled" : "";
       li.innerHTML =
-        '<span class="li-emoji">' + escapeHtml(g.emoji || "🎮") + "</span>" +
+        '<span class="li-emoji" aria-hidden="true">' + escapeHtml(g.emoji || "🎮") + "</span>" +
         '<div class="li-main">' +
-          '<div class="li-title">' + escapeHtml(g.title) + "</div>" +
+          '<div class="li-title">' + t + "</div>" +
           '<div class="li-meta">' + escapeHtml(g.subject || "") +
             " · " + escapeHtml((g.grades || []).join(", ")) + "</div>" +
         "</div>" +
         '<div class="li-actions">' +
-          '<button type="button" class="mini" data-act="up" title="เลื่อนขึ้น">↑</button>' +
-          '<button type="button" class="mini" data-act="down" title="เลื่อนลง">↓</button>' +
-          '<button type="button" class="mini" data-act="edit" title="แก้ไข">✏️</button>' +
-          '<button type="button" class="mini danger" data-act="del" title="ลบ">🗑️</button>' +
+          '<button type="button" class="mini" data-act="up" aria-label="เลื่อนขึ้น ' + t + '"' + upDis + ">↑</button>" +
+          '<button type="button" class="mini" data-act="down" aria-label="เลื่อนลง ' + t + '"' + downDis + ">↓</button>" +
+          '<button type="button" class="mini" data-act="edit" aria-label="แก้ไข ' + t + '">✏️</button>' +
+          '<button type="button" class="mini danger" data-act="del" aria-label="ลบ ' + t + '">🗑️</button>' +
         "</div>";
       li.querySelectorAll("button[data-act]").forEach(function (btn) {
         btn.addEventListener("click", function () { itemAction(btn.dataset.act, i); });
@@ -259,6 +289,7 @@
       if (confirm('ลบเกม "' + games[i].title + '" ออกจากรายการ?')) {
         games.splice(i, 1);
         renderList();
+        setDirty(true);
       }
     } else if (act === "edit") {
       startEdit(i);
@@ -268,6 +299,15 @@
   function swap(a, b) {
     const t = games[a]; games[a] = games[b]; games[b] = t;
     renderList();
+    setDirty(true);
+  }
+
+  // ---------- Dirty state (งานที่ยังไม่เผยแพร่) ----------
+  function setDirty(v) {
+    dirty = v;
+    if (el.publishBar) el.publishBar.hidden = !v;
+    if (el.dirtyBadge) el.dirtyBadge.hidden = !v;
+    document.body.classList.toggle("has-unsaved", v);
   }
 
   // ---------- Form ----------
@@ -319,11 +359,24 @@
       return;
     }
     const idx = Number(el.editIndex.value);
-    if (idx >= 0) { games[idx] = g; } else { games.push(g); }
+    if (idx >= 0) {
+      // แก้ไข: คง id เดิมไว้เสมอ (ลิงก์แชร์อ้างจาก id)
+      g.id = games[idx].id || makeId(g.title, otherIds(idx));
+      games[idx] = g;
+    } else {
+      // เพิ่มใหม่: สร้าง id ไม่ซ้ำจากชื่อ
+      g.id = makeId(g.title, games.map(function (x) { return x.id; }));
+      games.push(g);
+    }
     resetForm();
     renderList();
-    setStatus(el.commitStatus, "เพิ่ม/แก้ในรายการแล้ว — อย่าลืมกด “บันทึกขึ้นเว็บ” เพื่อให้นักเรียนเห็น", "warn");
+    setDirty(true);
   });
+
+  function otherIds(exceptIdx) {
+    return games.filter(function (_, i) { return i !== exceptIdx; })
+      .map(function (x) { return x.id; });
+  }
 
   el.btnResetForm.addEventListener("click", resetForm);
 
@@ -335,10 +388,16 @@
     setStatus(el.connStatus, "กำลังทดสอบ…", "");
     ghGetFile(c, c.path).then(function (res) {
       if (res.text === null) {
+        gamesBaseSha = null;
         setStatus(el.connStatus, "✅ เชื่อมต่อได้ แต่ยังไม่พบไฟล์ " + c.path + " (จะสร้างใหม่ตอน commit)", "ok");
-      } else {
-        setStatus(el.connStatus, "✅ เชื่อมต่อสำเร็จ อ่านไฟล์ " + c.path + " ได้", "ok");
+        return;
       }
+      setStatus(el.connStatus, "✅ เชื่อมต่อสำเร็จ กำลังดึงข้อมูลล่าสุด…", "ok");
+      // โหลดข้อมูลล่าสุดอัตโนมัติ (ถ้ายังไม่มีงานค้าง) เพื่อตั้ง baseSha สำหรับกันเขียนทับ
+      return loadGamesFromGitHub(c, { silent: true }).then(function () {
+        loadAnnouncementFromGitHub(c, { silent: true });
+        setStatus(el.connStatus, "✅ เชื่อมต่อสำเร็จ + โหลดข้อมูลล่าสุดแล้ว (" + games.length + " เกม)", "ok");
+      });
     }).catch(function (err) {
       setStatus(el.connStatus, "❌ " + err.message + " — ตรวจ token/สิทธิ์ Contents:write และชื่อ repo", "err");
     });
@@ -351,21 +410,42 @@
     setStatus(el.connStatus, "ลบ token ออกจากเบราว์เซอร์นี้แล้ว", "ok");
   });
 
-  // ---------- Reload from GitHub ----------
+  // ---------- Load games from GitHub (ตั้ง baseSha สำหรับกันเขียนทับ) ----------
+  function loadGamesFromGitHub(c, opts) {
+    opts = opts || {};
+    if (dirty && !opts.force) {
+      if (!confirm("มีการแก้ไขที่ยังไม่บันทึก การโหลดใหม่จะทับของที่แก้ไว้ ยืนยันไหม?")) {
+        return Promise.resolve(false);
+      }
+    }
+    return ghGetFile(c, c.path).then(function (res) {
+      if (res.text === null) {
+        gamesBaseSha = null;
+        if (!opts.silent) setStatus(el.commitStatus, "ยังไม่มีไฟล์เกมบน GitHub (จะสร้างใหม่ตอน commit)", "warn");
+        return true;
+      }
+      const parsed = parseGamesFromText(res.text);
+      if (!parsed) {
+        if (!opts.silent) setStatus(el.commitStatus, "อ่านข้อมูลจากไฟล์ไม่ได้ (รูปแบบไม่ตรง)", "err");
+        return false;
+      }
+      games = parsed;
+      ensureIds(games);
+      gamesBaseSha = res.sha;
+      renderList();
+      resetForm();
+      setDirty(false);
+      if (!opts.silent) setStatus(el.commitStatus, "✅ โหลดข้อมูลล่าสุดจาก GitHub แล้ว (" + games.length + " เกม)", "ok");
+      return true;
+    });
+  }
+
   el.btnReload.addEventListener("click", function () {
     const c = cfg();
     if (!c.token) { setStatus(el.commitStatus, "ใส่ token แล้วกดทดสอบก่อน", "err"); return; }
     saveCfg();
     setStatus(el.commitStatus, "กำลังโหลดข้อมูลล่าสุด…", "");
-    ghGetFile(c, c.path).then(function (res) {
-      if (res.text === null) { setStatus(el.commitStatus, "ยังไม่มีไฟล์บน GitHub", "warn"); return; }
-      const parsed = parseGamesFromText(res.text);
-      if (!parsed) { setStatus(el.commitStatus, "อ่านข้อมูลจากไฟล์ไม่ได้ (รูปแบบไม่ตรง)", "err"); return; }
-      games = parsed;
-      renderList();
-      resetForm();
-      setStatus(el.commitStatus, "✅ โหลดข้อมูลล่าสุดจาก GitHub แล้ว (" + games.length + " เกม)", "ok");
-    }).catch(function (err) {
+    loadGamesFromGitHub(c).catch(function (err) {
       setStatus(el.commitStatus, "❌ " + err.message, "err");
     });
   });
@@ -378,22 +458,28 @@
   }
 
   // ---------- Commit ----------
-  el.btnCommit.addEventListener("click", function () {
+  function commitGames() {
     const c = cfg();
     if (!c.token) { setStatus(el.commitStatus, "❌ ยังไม่ได้ใส่ token (ดูขั้นที่ 1)", "err"); return; }
     if (games.length === 0 && !confirm("รายการเกมว่าง จะบันทึกไฟล์ว่างจริงหรือ?")) return;
     saveCfg();
+    ensureIds(games);
     el.btnCommit.disabled = true;
+    if (el.btnCommitSticky) el.btnCommitSticky.disabled = true;
     setStatus(el.commitStatus, "กำลังบันทึกขึ้น GitHub…", "");
-    // ดึง sha ล่าสุดก่อน กัน conflict
+    // ดึง sha ล่าสุด แล้วเทียบกับตอนโหลด — ถ้าไม่ตรง = มีคนแก้ที่อื่น ห้ามเขียนทับ
     ghGetFile(c, c.path).then(function (res) {
+      if (gamesBaseSha !== null && res.sha && res.sha !== gamesBaseSha) {
+        throw new Error("CONFLICT");
+      }
       const text = buildGamesJs(games);
       const msg = "อัปเดตรายการเกมผ่านหน้า admin (" + games.length + " เกม)";
       return ghPutFile(c, c.path, text, res.sha, msg);
     }).then(function (j) {
+      if (j && j.content && j.content.sha) gamesBaseSha = j.content.sha; // อัปเดต base เป็นเวอร์ชันล่าสุด
+      setDirty(false);
       const link = j && j.commit && j.commit.html_url;
-      setStatus(el.commitStatus,
-        "✅ บันทึกสำเร็จ! เว็บจะอัปเดตอัตโนมัติภายใน ~1 นาที" + (link ? "" : ""), "ok");
+      setStatus(el.commitStatus, "✅ บันทึกสำเร็จ! เว็บจะอัปเดตอัตโนมัติภายใน ~1 นาที", "ok");
       if (link) {
         const a = document.createElement("a");
         a.href = link; a.target = "_blank"; a.rel = "noopener";
@@ -401,13 +487,22 @@
         el.commitStatus.appendChild(a);
       }
     }).catch(function (err) {
-      let hint = "";
-      if (/409/.test(err.message)) hint = " — ไฟล์ถูกแก้ที่อื่น กด “โหลดใหม่จาก GitHub” แล้วลองใหม่";
-      setStatus(el.commitStatus, "❌ " + err.message + hint, "err");
+      if (err.message === "CONFLICT") {
+        setStatus(el.commitStatus,
+          "⚠️ ไฟล์ถูกแก้จากที่อื่นหลังคุณโหลด — ระบบไม่บันทึกทับให้ กด “โหลดใหม่จาก GitHub” (จะทับงานที่ยังไม่บันทึก) แล้วทำซ้ำ", "err");
+      } else {
+        let hint = "";
+        if (/409/.test(err.message)) hint = " — ไฟล์ถูกแก้ที่อื่น กด “โหลดใหม่จาก GitHub” แล้วลองใหม่";
+        setStatus(el.commitStatus, "❌ " + err.message + hint, "err");
+      }
     }).then(function () {
       el.btnCommit.disabled = false;
+      if (el.btnCommitSticky) el.btnCommitSticky.disabled = false;
     });
-  });
+  }
+
+  el.btnCommit.addEventListener("click", commitGames);
+  if (el.btnCommitSticky) el.btnCommitSticky.addEventListener("click", commitGames);
 
   // ---------- Export / Import ----------
   el.btnExport.addEventListener("click", function () {
@@ -427,8 +522,10 @@
     if (!Array.isArray(data)) { setStatus(el.commitStatus, "JSON ต้องเป็น array ของเกม", "err"); return; }
     if (!confirm("แทนที่รายการปัจจุบันด้วยข้อมูลที่วาง (" + data.length + " เกม)?")) return;
     games = data;
+    ensureIds(games);
     renderList();
     resetForm();
+    setDirty(true);
     setStatus(el.commitStatus, "นำเข้าแล้ว — กด “บันทึกขึ้นเว็บ” เพื่อให้ถาวร", "warn");
   });
 
@@ -436,6 +533,7 @@
   function buildAnnouncementJs(obj) {
     const clean = {
       enabled: !!obj.enabled,
+      important: !!obj.important,
       title: obj.title || "",
       message: obj.message || "",
     };
@@ -455,6 +553,7 @@
   function loadAnnouncementToForm(a) {
     a = a || {};
     el.annEnabled.checked = !!a.enabled;
+    if (el.annImportant) el.annImportant.checked = !!a.important;
     el.annTitle.value = a.title || "";
     el.annMessage.value = a.message || "";
   }
@@ -462,9 +561,26 @@
   function readAnnouncementForm() {
     return {
       enabled: el.annEnabled.checked,
+      important: el.annImportant ? el.annImportant.checked : false,
       title: el.annTitle.value.trim(),
       message: el.annMessage.value.trim(),
     };
+  }
+
+  function loadAnnouncementFromGitHub(c, opts) {
+    opts = opts || {};
+    return ghGetFile(c, ANNOUNCE_PATH).then(function (res) {
+      if (res.text === null) { annBaseSha = null; return false; }
+      const parsed = parseAnnouncementFromText(res.text);
+      if (!parsed) {
+        if (!opts.silent) setStatus(el.annStatus, "อ่านไฟล์ประกาศไม่ได้ (รูปแบบไม่ตรง)", "err");
+        return false;
+      }
+      loadAnnouncementToForm(parsed);
+      annBaseSha = res.sha;
+      if (!opts.silent) setStatus(el.annStatus, "✅ โหลดประกาศล่าสุดจาก GitHub แล้ว", "ok");
+      return true;
+    });
   }
 
   el.btnSaveAnnounce.addEventListener("click", function () {
@@ -479,17 +595,25 @@
     el.btnSaveAnnounce.disabled = true;
     setStatus(el.annStatus, "กำลังบันทึกประกาศ…", "");
     ghGetFile(c, ANNOUNCE_PATH).then(function (res) {
+      if (annBaseSha !== null && res.sha && res.sha !== annBaseSha) {
+        throw new Error("CONFLICT");
+      }
       const text = buildAnnouncementJs(ann);
       const msg = "อัปเดตประกาศหน้าเว็บผ่าน admin (" + (ann.enabled ? "เปิด" : "ปิด") + ")";
       return ghPutFile(c, ANNOUNCE_PATH, text, res.sha, msg);
-    }).then(function () {
+    }).then(function (j) {
+      if (j && j.content && j.content.sha) annBaseSha = j.content.sha;
       setStatus(el.annStatus,
         "✅ บันทึกประกาศแล้ว เว็บจะอัปเดตภายใน ~1 นาที" +
         (ann.enabled ? "" : " (ปิดประกาศแล้ว)"), "ok");
     }).catch(function (err) {
-      let hint = "";
-      if (/409/.test(err.message)) hint = " — ไฟล์ถูกแก้ที่อื่น กด “โหลดใหม่จาก GitHub” แล้วลองใหม่";
-      setStatus(el.annStatus, "❌ " + err.message + hint, "err");
+      if (err.message === "CONFLICT") {
+        setStatus(el.annStatus, "⚠️ ไฟล์ประกาศถูกแก้จากที่อื่น กด “โหลดใหม่จาก GitHub” แล้วทำซ้ำ", "err");
+      } else {
+        let hint = "";
+        if (/409/.test(err.message)) hint = " — ไฟล์ถูกแก้ที่อื่น กด “โหลดใหม่จาก GitHub” แล้วลองใหม่";
+        setStatus(el.annStatus, "❌ " + err.message + hint, "err");
+      }
     }).then(function () {
       el.btnSaveAnnounce.disabled = false;
     });
@@ -500,23 +624,38 @@
     if (!c.token) { setStatus(el.annStatus, "ใส่ token แล้วกดทดสอบก่อน", "err"); return; }
     saveCfg();
     setStatus(el.annStatus, "กำลังโหลดประกาศล่าสุด…", "");
-    ghGetFile(c, ANNOUNCE_PATH).then(function (res) {
-      if (res.text === null) { setStatus(el.annStatus, "ยังไม่มีไฟล์ประกาศบน GitHub", "warn"); return; }
-      const parsed = parseAnnouncementFromText(res.text);
-      if (!parsed) { setStatus(el.annStatus, "อ่านไฟล์ประกาศไม่ได้ (รูปแบบไม่ตรง)", "err"); return; }
-      loadAnnouncementToForm(parsed);
-      setStatus(el.annStatus, "✅ โหลดประกาศล่าสุดจาก GitHub แล้ว", "ok");
+    loadAnnouncementFromGitHub(c).then(function (ok) {
+      if (ok === false && annBaseSha === null) setStatus(el.annStatus, "ยังไม่มีไฟล์ประกาศบน GitHub", "warn");
     }).catch(function (err) {
       setStatus(el.annStatus, "❌ " + err.message, "err");
     });
   });
 
+  // เตือนก่อนออกจากหน้าเมื่อมีงานที่ยังไม่บันทึก
+  window.addEventListener("beforeunload", function (e) {
+    if (dirty) { e.preventDefault(); e.returnValue = ""; return ""; }
+  });
+
   // ---------- Init ----------
   buildGradePicker();
   loadCfg();
+  ensureIds(games);
   renderList();
   resetForm();
+  setDirty(false);
   loadAnnouncementToForm(window.ANNOUNCEMENT || {});
   el.listNote.textContent =
-    games.length + " เกม (จากข้อมูลที่โหลดมากับหน้านี้) — ใส่ token แล้วกด “โหลดใหม่จาก GitHub” เพื่อดึงล่าสุด";
+    games.length + " เกม (จากข้อมูลที่โหลดมากับหน้านี้)";
+
+  // ถ้าเครื่องนี้จำ token ไว้ ให้ดึงข้อมูลล่าสุดอัตโนมัติ (ตั้ง baseSha กันเขียนทับ)
+  if (el.token.value.trim()) {
+    const c = cfg();
+    setStatus(el.commitStatus, "กำลังดึงข้อมูลล่าสุดจาก GitHub…", "");
+    loadGamesFromGitHub(c, { silent: true, force: true }).then(function () {
+      loadAnnouncementFromGitHub(c, { silent: true });
+      setStatus(el.commitStatus, "พร้อมแก้ไข — โหลดข้อมูลล่าสุดแล้ว (" + games.length + " เกม)", "ok");
+    }).catch(function () {
+      setStatus(el.commitStatus, "โหลดอัตโนมัติไม่สำเร็จ ลองกด “ทดสอบการเชื่อมต่อ”", "warn");
+    });
+  }
 })();

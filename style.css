@@ -268,6 +268,65 @@ body {
   opacity: 1;
 }
 
+/* ---------- แถบประกาศ (banner, ไม่บล็อก) ---------- */
+.announce-banner {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #4a3608;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.announce-banner-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 16px;
+}
+
+.announce-banner-icon { flex-shrink: 0; font-size: 1.1rem; line-height: 1.5; }
+.announce-banner-text { flex: 1; font-size: 0.92rem; line-height: 1.5; }
+
+.announce-banner-close {
+  flex-shrink: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.08);
+  color: inherit;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+.announce-banner-close:hover { background: rgba(0, 0, 0, 0.16); }
+
+@media (prefers-color-scheme: dark) {
+  .announce-banner {
+    background: linear-gradient(135deg, #3a3113, #47391a);
+    color: #f4e6c4;
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+  }
+  .announce-banner-close { background: rgba(255, 255, 255, 0.12); }
+  .announce-banner-close:hover { background: rgba(255, 255, 255, 0.22); }
+}
+
+/* ---------- Focus ring ที่มองเห็นชัด (คีย์บอร์ด) ---------- */
+:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ---------- ลดการเคลื่อนไหวตามการตั้งค่าระบบ ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
 /* ---------- ป๊อปอัปประกาศ ---------- */
 .announce-overlay {
   position: fixed;

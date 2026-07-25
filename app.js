@@ -19,15 +19,25 @@
     "ม.1", "ม.2", "ม.3", "ม.4", "ม.5", "ม.6",
   ];
 
-  // เตรียมข้อมูลเกม: ใส่ id + สีสำรองถ้าไม่มี
+  // เตรียมข้อมูลเกม: ใส่ id คงที่ (slug) + สีสำรองถ้าไม่มี
   const games = (Array.isArray(window.GAMES) ? window.GAMES : []).map(function (g, i) {
     return Object.assign({}, g, {
-      id: i,
+      id: g.id || String(i), // ใช้ slug คงที่จาก games.js; เกมเก่าที่ไม่มี id ใช้เลขลำดับ (เผื่อไว้)
+      index: i,
       emoji: g.emoji || "🎮",
       color: g.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length],
       grades: Array.isArray(g.grades) ? g.grades : (g.grades ? [g.grades] : []),
     });
   });
+
+  function findGame(key) {
+    // หาเกมจาก slug ก่อน ถ้าไม่เจอและเป็นตัวเลข ใช้เลขลำดับ (รองรับลิงก์เก่า #game=0)
+    for (var i = 0; i < games.length; i++) {
+      if (games[i].id === key) return games[i];
+    }
+    if (/^\d+$/.test(key) && games[Number(key)]) return games[Number(key)];
+    return null;
+  }
 
   // สถานะตัวกรอง (null = ทั้งหมด)
   const state = { subject: null, grade: null, search: "" };
@@ -157,7 +167,7 @@
         "</div>";
 
       card.addEventListener("click", function () {
-        openModal(g);
+        openModal(g, true);
       });
       el.grid.appendChild(card);
     });
@@ -179,8 +189,44 @@
     });
   }
 
+  // ---------- ตัวช่วยจัดการ focus ของ dialog (ใช้ร่วมกับป๊อปอัปประกาศ) ----------
+  const PAGE_REGIONS = [".site-header", ".container", ".site-footer"];
+
+  function backgroundInert(on) {
+    PAGE_REGIONS.forEach(function (sel) {
+      const node = document.querySelector(sel);
+      if (!node) return;
+      if (on) { node.setAttribute("inert", ""); node.setAttribute("aria-hidden", "true"); }
+      else { node.removeAttribute("inert"); node.removeAttribute("aria-hidden"); }
+    });
+  }
+
+  function focusables(panel) {
+    const sel =
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]),' +
+      ' textarea:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])';
+    return Array.prototype.filter.call(panel.querySelectorAll(sel), function (elm) {
+      return elm.offsetWidth > 0 || elm.offsetHeight > 0 || elm === document.activeElement;
+    });
+  }
+
+  function trapTab(e, panel) {
+    if (e.key !== "Tab") return;
+    const list = focusables(panel);
+    if (!list.length) return;
+    const first = list[0];
+    const last = list[list.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault(); last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault(); first.focus();
+    }
+  }
+
   // ---------- Modal ----------
-  function openModal(g) {
+  let modalOpener = null;
+
+  function openModal(g, pushHistory) {
     el.modalTitle.textContent = g.title;
     el.modalEmoji.textContent = g.emoji;
     el.modalTags.innerHTML =
@@ -194,6 +240,7 @@
     el.openFull.href = g.url;
     el.copyLink.dataset.url = g.url;
     el.copyLink.textContent = "🔗 คัดลอกลิงก์";
+    el.frame.title = "พรีวิวเกม " + g.title;
 
     // โหลด iframe
     el.frameLoading.style.display = "flex";
@@ -202,21 +249,44 @@
       el.frameLoading.style.display = "none";
     };
 
+    modalOpener = document.activeElement;
     el.modal.hidden = false;
     document.body.classList.add("modal-open");
+    backgroundInert(true);
 
-    // อัปเดต URL ให้แชร์เกมเดียวได้
-    if (history.replaceState) {
-      history.replaceState(null, "", "#game=" + g.id);
+    // ย้าย focus เข้า dialog (ปุ่มปิด)
+    const closeBtn = el.modal.querySelector(".icon-btn[data-close]");
+    if (closeBtn) closeBtn.focus();
+
+    if (pushHistory && history.pushState) {
+      history.pushState({ modal: g.id }, "", "#game=" + encodeURIComponent(g.id));
+    } else if (history.replaceState) {
+      history.replaceState({ modalInitial: g.id }, "", "#game=" + encodeURIComponent(g.id));
     }
   }
 
-  function closeModal() {
+  // ปิดจริง (คืนสถานะทุกอย่าง) — ไม่ยุ่งกับ history
+  function hideModal() {
+    if (el.modal.hidden) return;
     el.modal.hidden = true;
     el.frame.src = "about:blank";
     document.body.classList.remove("modal-open");
-    if (history.replaceState) {
-      history.replaceState(null, "", location.pathname + location.search);
+    backgroundInert(false);
+    if (modalOpener && typeof modalOpener.focus === "function") {
+      modalOpener.focus();
+    }
+    modalOpener = null;
+  }
+
+  // ปิดจากการกดปุ่ม/Escape/backdrop → ถ้ามี state ที่ push ไว้ ให้ย้อน history (Back จะปิดเอง)
+  function closeModal() {
+    if (history.state && history.state.modal) {
+      history.back();
+    } else {
+      hideModal();
+      if (history.replaceState) {
+        history.replaceState(null, "", location.pathname + location.search);
+      }
     }
   }
 
@@ -240,7 +310,14 @@
   });
 
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && !el.modal.hidden) closeModal();
+    if (el.modal.hidden) return;
+    if (e.key === "Escape") closeModal();
+    else if (e.key === "Tab") trapTab(e, el.modal.querySelector(".modal-panel"));
+  });
+
+  // Back/Forward: ปิดโมดัลเมื่อ history ย้อนออกจาก state ของโมดัล
+  window.addEventListener("popstate", function () {
+    if (!el.modal.hidden) hideModal();
   });
 
   el.copyLink.addEventListener("click", function () {
@@ -275,10 +352,11 @@
 
   // ---------- Deep link (#game=<id>) ----------
   function openFromHash() {
-    const m = location.hash.match(/game=(\d+)/);
+    const m = location.hash.match(/game=([^&]+)/);
     if (m) {
-      const g = games[Number(m[1])];
-      if (g) openModal(g);
+      const key = decodeURIComponent(m[1]);
+      const g = findGame(key);
+      if (g && el.modal.hidden) openModal(g, false);
     }
   }
 
@@ -291,18 +369,53 @@
     return (a.title || "") + "" + (a.message || "");
   }
 
+  function announceDismissed(sig) {
+    try { return localStorage.getItem("gamehub_announce_dismissed") === sig; }
+    catch (e) { return false; }
+  }
+  function rememberDismiss(sig) {
+    try { localStorage.setItem("gamehub_announce_dismissed", sig); } catch (e) { /* ignore */ }
+  }
+
   function showAnnouncement() {
     const a = window.ANNOUNCEMENT;
     if (!a || !a.enabled || !(a.message || a.title)) return;
-
     const sig = announceSignature(a);
-    try {
-      if (localStorage.getItem("gamehub_announce_dismissed") === sig) return;
-    } catch (e) { /* localStorage ปิดอยู่ ก็แสดงตามปกติ */ }
+    if (announceDismissed(sig)) return;
 
+    if (a.important) showAnnounceDialog(a, sig);
+    else showAnnounceBanner(a, sig);
+  }
+
+  // ประกาศทั่วไป → แถบด้านบน ไม่บล็อกการใช้งาน (ปิดแล้วจำไว้จนกว่าข้อความจะเปลี่ยน)
+  function showAnnounceBanner(a, sig) {
+    const banner = document.createElement("div");
+    banner.className = "announce-banner";
+    banner.setAttribute("role", "region");
+    banner.setAttribute("aria-label", "ประกาศ");
+    const msgHtml = escapeHtml(a.message || "").replace(/\n/g, "<br>");
+    banner.innerHTML =
+      '<div class="announce-banner-inner">' +
+        '<span class="announce-banner-icon" aria-hidden="true">📢</span>' +
+        '<div class="announce-banner-text">' +
+          (a.title ? '<strong>' + escapeHtml(a.title) + "</strong> " : "") + msgHtml +
+        "</div>" +
+        '<button type="button" class="announce-banner-close" aria-label="ปิดประกาศ">✕</button>' +
+      "</div>";
+    banner.querySelector(".announce-banner-close").addEventListener("click", function () {
+      rememberDismiss(sig);
+      banner.remove();
+    });
+    const header = document.querySelector(".site-header");
+    if (header && header.parentNode) header.parentNode.insertBefore(banner, header.nextSibling);
+    else document.body.insertBefore(banner, document.body.firstChild);
+  }
+
+  // ประกาศสำคัญ → กล่องกลางจอ (บล็อก) พร้อมจัดการ focus เต็มรูปแบบ
+  function showAnnounceDialog(a, sig) {
+    const opener = document.activeElement;
     const overlay = document.createElement("div");
     overlay.className = "announce-overlay";
-
     const msgHtml = escapeHtml(a.message || "").replace(/\n/g, "<br>");
     overlay.innerHTML =
       '<div class="announce-box" role="dialog" aria-modal="true" aria-labelledby="announceTitle">' +
@@ -312,30 +425,31 @@
         '<label class="announce-hide"><input type="checkbox" id="announceHide" /> ไม่แสดงข้อความนี้อีก</label>' +
         '<button type="button" class="btn btn-primary announce-ok">รับทราบ</button>' +
       "</div>";
+    const box = overlay.querySelector(".announce-box");
 
+    function onKey(e) {
+      if (e.key === "Escape") close();
+      else if (e.key === "Tab") trapTab(e, box);
+    }
     function close() {
       const hide = overlay.querySelector("#announceHide");
-      if (hide && hide.checked) {
-        try { localStorage.setItem("gamehub_announce_dismissed", sig); } catch (e) { /* ignore */ }
-      }
+      if (hide && hide.checked) rememberDismiss(sig);
+      document.removeEventListener("keydown", onKey);
       overlay.remove();
       document.body.classList.remove("modal-open");
+      backgroundInert(false);
+      if (opener && typeof opener.focus === "function") opener.focus();
     }
 
-    overlay.addEventListener("click", function (e) {
-      if (e.target === overlay) close();
-    });
+    overlay.addEventListener("click", function (e) { if (e.target === overlay) close(); });
     overlay.querySelector(".announce-close").addEventListener("click", close);
     overlay.querySelector(".announce-ok").addEventListener("click", close);
-    document.addEventListener("keydown", function onEsc(e) {
-      if (e.key === "Escape" && document.body.contains(overlay)) {
-        close();
-        document.removeEventListener("keydown", onEsc);
-      }
-    });
+    document.addEventListener("keydown", onKey);
 
     document.body.appendChild(overlay);
     document.body.classList.add("modal-open");
+    backgroundInert(true);
+    overlay.querySelector(".announce-close").focus();
   }
 
   // ---------- Init ----------

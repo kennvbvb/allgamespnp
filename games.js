@@ -1,10 +1,12 @@
 /* ============================================================
    รายการเกมทั้งหมด — ไฟล์นี้แก้ผ่านหน้า "จัดการเกม" (admin.html)
    หรือจะแก้มือก็ได้ (เป็น JSON ปกติ)
+   หมายเหตุ: ห้ามเปลี่ยน "id" ของเกมที่เผยแพร่แล้ว (ลิงก์แชร์อ้างจาก id)
    ============================================================ */
 
 const GAMES = [
   {
+    "id": "game",
     "title": "ตราดเมืองนี้...ใครดูแล?",
     "description": "เรียนรู้การปกครองส่วนท้องถิ่นผ่านจังหวัดตราด ว่าใครดูแลบ้านเมืองของเรา เล่นแข่งเป็นทีม",
     "subject": "สังคมศึกษาฯ",
@@ -16,6 +18,7 @@ const GAMES = [
     "color": "#0e7490"
   },
   {
+    "id": "game-2",
     "title": "ตะลุย 4 ภาค ล่าขุมทรัพย์วัฒนธรรมไทย",
     "description": "",
     "subject": "สังคมศึกษาฯ",
@@ -26,6 +29,7 @@ const GAMES = [
     "color": "#4f8ef7"
   },
   {
+    "id": "game-3",
     "title": "แบบทดสอบท้องถิ่นกับชุมชน",
     "description": "",
     "subject": "สังคมศึกษาฯ",
@@ -36,6 +40,7 @@ const GAMES = [
     "color": "#4f8ef7"
   },
   {
+    "id": "game-4",
     "title": "วัฒนธรรมน่ารู้",
     "description": "",
     "subject": "สังคมศึกษาฯ",
@@ -46,6 +51,7 @@ const GAMES = [
     "color": "#ee291b"
   },
   {
+    "id": "game-5",
     "title": "อารยธรรมจีนกับไทยและอาเซียน",
     "description": "",
     "subject": "สังคมศึกษาฯ",
@@ -56,6 +62,7 @@ const GAMES = [
     "color": "#e90101"
   },
   {
+    "id": "game-6",
     "title": "4 กุญแจพิทักษ์สิทธิเด็ก",
     "description": "",
     "subject": "สังคมศึกษาฯ",
@@ -66,6 +73,7 @@ const GAMES = [
     "color": "#7119f5"
   },
   {
+    "id": "game-7",
     "title": "ศึกปัญญา รัตนโกสินทร์รุ่งเรือง",
     "description": "",
     "subject": "สังคมศึกษาฯ",
@@ -76,6 +84,7 @@ const GAMES = [
     "color": "#064aa2"
   },
   {
+    "id": "game-8",
     "title": "แบบทดสอบ กฎหมายน่ารู้",
     "description": "",
     "subject": "สังคมศึกษาฯ",
@@ -86,6 +95,7 @@ const GAMES = [
     "color": "#4200bd"
   },
   {
+    "id": "game-9",
     "title": "กระดานภารกิจทีมประชาธิปไตย",
     "description": "",
     "subject": "สังคมศึกษาฯ",
@@ -96,6 +106,7 @@ const GAMES = [
     "color": "#4f8ef7"
   },
   {
+    "id": "game-10",
     "title": "นักโบราณคดีน้อย",
     "description": "",
     "subject": "สังคมศึกษาฯ",
@@ -106,6 +117,7 @@ const GAMES = [
     "color": "#1d6303"
   },
   {
+    "id": "game-11",
     "title": "ภารกิจทะเบียนราษฎร",
     "description": "",
     "subject": "สังคมศึกษาฯ",
@@ -116,6 +128,7 @@ const GAMES = [
     "color": "#003899"
   },
   {
+    "id": "game-12",
     "title": "ภารกิจพลเมืองดี รู้สิทธิ รู้หน้าที่",
     "description": "",
     "subject": "สังคมศึกษาฯ",
@@ -126,6 +139,7 @@ const GAMES = [
     "color": "#4f8ef7"
   },
   {
+    "id": "game-13",
     "title": "เกมพลเมืองดี",
     "description": "",
     "subject": "สังคมศึกษาฯ",
@@ -136,6 +150,7 @@ const GAMES = [
     "color": "#e114b5"
   },
   {
+    "id": "game-14",
     "title": "ฮีโร่พิทักษ์สิทธิเด็ก",
     "description": "",
     "subject": "สังคมศึกษาฯ",
@@ -146,6 +161,7 @@ const GAMES = [
     "color": "#ff9d14"
   },
   {
+    "id": "game-15",
     "title": "เกมธรรมะหรรษา",
     "description": "",
     "subject": "สังคมศึกษาฯ",
@@ -156,6 +172,7 @@ const GAMES = [
     "color": "#ccb100"
   },
   {
+    "id": "game-16",
     "title": "เกมส์พิทักษ์สิทธิเด็ก",
     "description": "",
     "subject": "สังคมศึกษาฯ",
@@ -166,6 +183,7 @@ const GAMES = [
     "color": "#dbafe4"
   },
   {
+    "id": "game-17",
     "title": "กระดานตลาดทุเรียน",
     "description": "",
     "subject": "บูรณาการ",
@@ -176,6 +194,7 @@ const GAMES = [
     "color": "#1a7425"
   },
   {
+    "id": "game-18",
     "title": "เกมคำใบ้ขึ้นจอ",
     "description": "ศาสนาเปรียบเทียบ",
     "subject": "สังคมศึกษาฯ",
@@ -186,6 +205,7 @@ const GAMES = [
     "color": "#b6d0fb"
   },
   {
+    "id": "game-19",
     "title": "ท่องแดนธรรม นำปัญญา",
     "description": "",
     "subject": "สังคมศึกษาฯ",

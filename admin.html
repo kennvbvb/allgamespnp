@@ -116,7 +116,8 @@
 
     <!-- ขั้นที่ 3: รายการเกม + commit -->
     <section class="admin-card">
-      <h2 class="admin-h2">3. รายการเกม <span class="count-pill" id="listCount">0</span></h2>
+      <h2 class="admin-h2">3. รายการเกม <span class="count-pill" id="listCount">0</span>
+        <span class="dirty-badge" id="dirtyBadge" hidden>● ยังไม่เผยแพร่</span></h2>
       <p class="status" id="listNote">กำลังโหลดข้อมูลปัจจุบัน…</p>
       <ul class="admin-list" id="gameList"></ul>
 
@@ -145,6 +146,10 @@
         <input type="checkbox" id="annEnabled" />
         <span>เปิดแสดงประกาศ</span>
       </label>
+      <label class="checkline">
+        <input type="checkbox" id="annImportant" />
+        <span>แสดงแบบเด้งกลางจอ (ประกาศสำคัญ) — ปกติจะเป็นแถบด้านบนที่ไม่บังเกม</span>
+      </label>
       <label class="field">
         <span>หัวข้อ</span>
         <input type="text" id="annTitle" maxlength="120" placeholder="📢 ประกาศ" />
@@ -161,6 +166,12 @@
     </section>
 
   </main>
+
+  <!-- แถบเผยแพร่ (โผล่เมื่อมีงานยังไม่บันทึก) -->
+  <div class="publish-bar" id="publishBar" hidden>
+    <span class="publish-bar-text">● มีการแก้ไขที่ยังไม่เผยแพร่</span>
+    <button type="button" id="btnCommitSticky" class="btn btn-primary">💾 บันทึกขึ้นเว็บ</button>
+  </div>
 
   <script src="games.js"></script>
   <script src="announcement.js"></script>
