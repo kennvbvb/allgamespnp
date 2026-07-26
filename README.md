@@ -101,3 +101,20 @@
 ### แนวทางเนื้อหา (สำหรับครู)
 - **คำอธิบายเกม** ~40–80 ตัวอักษร บอกว่า “เรียนเรื่องอะไร” เพื่อให้นักเรียนแยกเกมออก
 - **`id` ของเกม** ห้ามเปลี่ยนหลังเผยแพร่ (หน้า admin สร้างให้อัตโนมัติเมื่อเพิ่มเกมใหม่)
+
+---
+
+## 🧪 การทดสอบ (สำหรับผู้ดูแลโค้ด)
+
+มี smoke test + accessibility test ด้วย Playwright — รันทุก push/PR ผ่าน GitHub Actions (`.github/workflows/ci.yml`)
+
+```bash
+npm install                 # ครั้งแรก
+npx playwright install chromium
+npm test                    # รัน tests/ ทั้ง desktop + mobile (รวม axe a11y)
+```
+
+- `tests/hub.spec.js` — แสดงเกม, ค้นหา/กรอง, โมดัล (click/Escape/Back), deep link, บั๊ก dialog stack
+- `tests/admin.spec.js` — validation, เพิ่มเกม, ค้นหาในรายการ, undo, token sessionStorage, import schema
+- `tests/a11y.spec.js` — axe WCAG 2 A/AA (ไม่มี violation ระดับ critical/serious)
+- `npm run test:links` — ตรวจว่าลิงก์เกมทุกเกมยังเปิดได้ (มี workflow ตั้งเวลารายสัปดาห์)
