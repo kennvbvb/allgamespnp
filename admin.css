@@ -125,11 +125,12 @@
 .grade-chip {
   display: inline-flex;
   align-items: center;
+  min-height: var(--touch-min);
   gap: 5px;
-  padding: 6px 11px;
+  padding: 6px 13px;
   border: 1px solid var(--border);
   border-radius: 999px;
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   cursor: pointer;
   user-select: none;
   background: var(--surface);
@@ -137,9 +138,9 @@
 
 .grade-chip:has(input:checked) {
   border-color: var(--primary);
-  background: rgba(79, 142, 247, 0.12);
+  background: rgba(47, 111, 216, 0.14);
   color: var(--primary-dark);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .grade-chip input {
@@ -185,20 +186,24 @@
 .li-title { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .li-meta { font-size: 0.82rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.li-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.li-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
 .mini {
   border: 1px solid var(--border);
   background: var(--surface);
-  border-radius: 8px;
-  width: 34px;
-  height: 34px;
-  font-size: 0.95rem;
+  border-radius: 10px;
+  width: var(--touch-min, 44px);
+  height: var(--touch-min, 44px);
+  font-size: 1rem;
   cursor: pointer;
   line-height: 1;
 }
-.mini:hover { background: var(--bg); }
-.mini.danger:hover { background: #fdecec; border-color: #f4c4c4; }
+.mini:hover:not(:disabled) { background: var(--bg); }
+.mini:disabled { opacity: 0.4; cursor: not-allowed; }
+.mini.danger:hover:not(:disabled) { background: #fdecec; border-color: #f4c4c4; }
+@media (prefers-color-scheme: dark) {
+  .mini.danger:hover:not(:disabled) { background: #3a1f1f; border-color: #6b3535; }
+}
 
 /* ---------- Commit bar ---------- */
 .commit-bar { margin-top: 16px; }
@@ -213,6 +218,13 @@
 .status-err { color: #c62828; }
 .status-warn { color: #a15c00; }
 .inline-link { color: var(--primary-dark); margin-left: 4px; }
+
+@media (prefers-color-scheme: dark) {
+  .status-ok { color: #4ade80; }
+  .status-err { color: #f87171; }
+  .status-warn { color: #f0c060; }
+  .inline-link { color: #7cb0ff; }
+}
 
 /* ---------- Help / details ---------- */
 .help {
@@ -286,4 +298,9 @@ body.has-unsaved { padding-bottom: 72px; }
   .admin-card { padding: 16px; }
   .publish-bar { padding: 10px 12px; }
   .publish-bar-text { font-size: 0.82rem; }
+
+  /* ให้ปุ่ม action (44px) มีที่พอ โดยตกลงไปแถวล่างของแต่ละรายการ */
+  .admin-list-item { flex-wrap: wrap; }
+  .li-main { min-width: 60%; }
+  .li-actions { margin-left: auto; }
 }

@@ -2,10 +2,13 @@
   --bg: #f4f6fb;
   --surface: #ffffff;
   --text: #1e2433;
-  --text-muted: #6b7280;
+  --text-muted: #5f6875; /* เข้มพอผ่าน WCAG AA 4.5:1 บนพื้นอ่อน */
   --border: #e5e8f0;
-  --primary: #4f8ef7;
-  --primary-dark: #2f6fd8;
+  --primary: #2f6fd8;      /* พื้นปุ่ม/ชิปที่มีตัวอักษรขาว ผ่าน 4.5:1 */
+  --primary-dark: #2559b8; /* hover */
+  --primary-bright: #4f8ef7; /* สีสดสำหรับพื้นที่ตกแต่ง (header/gradient) */
+  --focus-ring: #2f6fd8;
+  --touch-min: 44px;
   --shadow: 0 2px 8px rgba(30, 40, 70, 0.08);
   --shadow-lg: 0 12px 40px rgba(30, 40, 70, 0.22);
   --radius: 16px;
@@ -120,10 +123,13 @@ body {
 }
 
 .chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
   border: 1.5px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  padding: 7px 14px;
+  padding: 7px 15px;
   border-radius: 999px;
   font-size: 0.88rem;
   font-weight: 600;
@@ -140,6 +146,14 @@ body {
   background: var(--primary);
   border-color: var(--primary);
   color: #fff;
+  font-weight: 700;
+}
+
+/* บอกสถานะเลือกด้วยเครื่องหมายถูก ไม่พึ่งสีอย่างเดียว */
+.chip.active::before {
+  content: "✓";
+  margin-right: 6px;
+  font-weight: 800;
 }
 
 /* ---------- Result bar ---------- */
@@ -233,15 +247,16 @@ body {
   margin-top: 2px;
 }
 
-/* ปุ่มชวนกด — ดันไปอยู่ท้ายการ์ดเสมอเพื่อให้ทุกใบเรียงสวย */
+/* ปุ่มชวนกด — ดันไปอยู่ท้ายการ์ดเสมอเพื่อให้ทุกใบเรียงสวย
+   ใช้สี --primary คงที่ (ไม่ใช่สีการ์ดที่อาจอ่อนจนตัวอักษรขาวอ่านไม่ออก) */
 .card-cta {
   margin-top: auto;
   align-self: flex-start;
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: #fff;
-  background: var(--card-color, var(--primary));
-  padding: 6px 14px;
+  background: var(--primary);
+  padding: 8px 16px;
   border-radius: 999px;
 }
 
@@ -334,7 +349,7 @@ body {
 
 /* ---------- Focus ring ที่มองเห็นชัด (คีย์บอร์ด) ---------- */
 :focus-visible {
-  outline: 3px solid var(--primary);
+  outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -513,8 +528,8 @@ body {
 
 .icon-btn {
   flex-shrink: 0;
-  width: 38px;
-  height: 38px;
+  width: var(--touch-min);
+  height: var(--touch-min);
   border-radius: 50%;
   border: none;
   background: #eef1f6;
@@ -722,4 +737,8 @@ body.modal-open {
   .iframe-wrap {
     background: #12151d;
   }
+
+  /* ลิงก์/ข้อความสีน้ำเงินให้สว่างพอบนพื้นมืด */
+  .link-btn { color: #7cb0ff; }
+  :root { --focus-ring: #7cb0ff; }
 }
