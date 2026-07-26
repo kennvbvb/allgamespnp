@@ -45,7 +45,27 @@
     btnSaveAnnounce: $("btnSaveAnnounce"), btnReloadAnnounce: $("btnReloadAnnounce"),
     annStatus: $("annStatus"),
     publishBar: $("publishBar"), btnCommitSticky: $("btnCommitSticky"), dirtyBadge: $("dirtyBadge"),
+    btnToggleToken: $("btnToggleToken"), tokenStored: $("tokenStored"),
+    formErrors: $("formErrors"), errTitle: $("errTitle"), errSubject: $("errSubject"),
+    errUrl: $("errUrl"), errGrades: $("errGrades"),
+    listSearch: $("listSearch"), listSubjectFilter: $("listSubjectFilter"), listEmpty: $("listEmpty"),
+    snackbar: $("snackbar"), snackbarText: $("snackbarText"), snackbarAction: $("snackbarAction"),
+    changeSummary: $("changeSummary"),
   };
+
+  // สถานะตัวกรองรายการ + ตัวนับการเปลี่ยนแปลง (สำหรับสรุปก่อนเผยแพร่)
+  const listState = { search: "", subject: "" };
+  const changes = { added: 0, edited: 0, deleted: 0, reordered: false };
+  function resetChanges() { changes.added = 0; changes.edited = 0; changes.deleted = 0; changes.reordered = false; updateChangeSummary(); }
+  function updateChangeSummary() {
+    if (!el.changeSummary) return;
+    const parts = [];
+    if (changes.added) parts.push("เพิ่ม " + changes.added);
+    if (changes.edited) parts.push("แก้ " + changes.edited);
+    if (changes.deleted) parts.push("ลบ " + changes.deleted);
+    if (changes.reordered) parts.push("จัดลำดับใหม่");
+    el.changeSummary.textContent = parts.length ? "(" + parts.join(" · ") + ")" : "";
+  }
 
   // ---------- Utils ----------
   function deepCopy(x) { return JSON.parse(JSON.stringify(x)); }
@@ -250,16 +270,30 @@
     }).join("");
   }
 
-  // ---------- Render list ----------
+  // ---------- Render list (มีค้นหา/กรองในรายการ) ----------
+  function matchesListFilter(g) {
+    if (listState.subject && g.subject !== listState.subject) return false;
+    if (listState.search) {
+      const hay = ((g.title || "") + " " + (g.subject || "") + " " + (g.grades || []).join(" ")).toLowerCase();
+      if (hay.indexOf(listState.search.toLowerCase()) === -1) return false;
+    }
+    return true;
+  }
+
   function renderList() {
+    const filtering = !!(listState.search || listState.subject);
     el.list.innerHTML = "";
+    let shown = 0;
     games.forEach(function (g, i) {
+      if (!matchesListFilter(g)) return;
+      shown++;
       const li = document.createElement("li");
       li.className = "admin-list-item";
       li.style.setProperty("--item-color", g.color || "#4f8ef7");
       const t = escapeHtml(g.title);
-      const upDis = i === 0 ? " disabled" : "";
-      const downDis = i === games.length - 1 ? " disabled" : "";
+      // ปิดปุ่มเลื่อนเมื่อกำลังกรอง (ลำดับจริงสับสน) หรืออยู่หัว/ท้ายรายการ
+      const upDis = (filtering || i === 0) ? " disabled" : "";
+      const downDis = (filtering || i === games.length - 1) ? " disabled" : "";
       li.innerHTML =
         '<span class="li-emoji" aria-hidden="true">' + escapeHtml(g.emoji || "🎮") + "</span>" +
         '<div class="li-main">' +
@@ -279,28 +313,74 @@
       el.list.appendChild(li);
     });
     el.listCount.textContent = String(games.length);
+    el.listEmpty.hidden = shown !== 0;
     refreshSubjectList();
+    refreshListSubjectFilter();
+  }
+
+  function refreshListSubjectFilter() {
+    const cur = el.listSubjectFilter.value;
+    const subs = [];
+    games.forEach(function (g) { if (g.subject && subs.indexOf(g.subject) === -1) subs.push(g.subject); });
+    subs.sort(function (a, b) { return a.localeCompare(b, "th"); });
+    el.listSubjectFilter.innerHTML = '<option value="">ทุกวิชา</option>' +
+      subs.map(function (s) { return '<option value="' + escapeHtml(s) + '">' + escapeHtml(s) + "</option>"; }).join("");
+    if (subs.indexOf(cur) !== -1) el.listSubjectFilter.value = cur;
   }
 
   function itemAction(act, i) {
     if (act === "up" && i > 0) { swap(i, i - 1); }
     else if (act === "down" && i < games.length - 1) { swap(i, i + 1); }
-    else if (act === "del") {
-      if (confirm('ลบเกม "' + games[i].title + '" ออกจากรายการ?')) {
-        games.splice(i, 1);
-        renderList();
-        setDirty(true);
-      }
-    } else if (act === "edit") {
-      startEdit(i);
-    }
+    else if (act === "del") { deleteWithUndo(i); }
+    else if (act === "edit") { startEdit(i); }
   }
 
   function swap(a, b) {
     const t = games[a]; games[a] = games[b]; games[b] = t;
+    changes.reordered = true;
     renderList();
     setDirty(true);
+    updateChangeSummary();
   }
+
+  // ลบพร้อม snackbar เลิกทำ (ไม่ใช้ confirm)
+  let undoTimer = null;
+  function deleteWithUndo(i) {
+    const removed = games[i];
+    games.splice(i, 1);
+    changes.deleted++;
+    renderList();
+    setDirty(true);
+    updateChangeSummary();
+    showSnackbar('ลบ "' + removed.title + '" แล้ว', function () {
+      games.splice(i, 0, removed);
+      changes.deleted = Math.max(0, changes.deleted - 1);
+      renderList();
+      updateChangeSummary();
+    });
+  }
+
+  function showSnackbar(text, onUndo) {
+    clearTimeout(undoTimer);
+    el.snackbarText.textContent = text;
+    el.snackbar.hidden = false;
+    el.snackbarAction.onclick = function () {
+      clearTimeout(undoTimer);
+      el.snackbar.hidden = true;
+      if (onUndo) onUndo();
+    };
+    undoTimer = setTimeout(function () { el.snackbar.hidden = true; }, 6000);
+  }
+
+  // ค้นหา/กรองในรายการ
+  el.listSearch.addEventListener("input", function () {
+    listState.search = el.listSearch.value.trim();
+    renderList();
+  });
+  el.listSubjectFilter.addEventListener("change", function () {
+    listState.subject = el.listSubjectFilter.value;
+    renderList();
+  });
 
   // ---------- Dirty state (งานที่ยังไม่เผยแพร่) ----------
   function setDirty(v) {
@@ -330,6 +410,7 @@
     setSelectedGrades([]);
     el.formHeading.textContent = "2. เพิ่มเกมใหม่";
     el.btnSaveGame.textContent = "➕ เพิ่มเข้ารายการ";
+    clearFormErrors();
   }
 
   function startEdit(i) {
@@ -347,30 +428,61 @@
     el.form.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  function clearFormErrors() {
+    el.formErrors.hidden = true;
+    el.formErrors.textContent = "";
+    [["errTitle", "fTitle"], ["errSubject", "fSubject"], ["errUrl", "fUrl"], ["errGrades", null]]
+      .forEach(function (pair) {
+        el[pair[0]].hidden = true;
+        el[pair[0]].textContent = "";
+        if (pair[1]) el[pair[1]].classList.remove("invalid");
+      });
+  }
+
+  function setFieldError(errId, inputId, msg) {
+    el[errId].textContent = msg;
+    el[errId].hidden = false;
+    if (inputId) el[inputId].classList.add("invalid");
+  }
+
+  // ตรวจฟอร์ม → คืน element แรกที่ผิด (null = ผ่าน)
+  function validateForm(g) {
+    clearFormErrors();
+    let firstBad = null;
+    const problems = [];
+    if (!g.title) { setFieldError("errTitle", "fTitle", "กรุณากรอกชื่อเกม"); problems.push("ชื่อเกม"); firstBad = firstBad || el.fTitle; }
+    if (!g.subject) { setFieldError("errSubject", "fSubject", "กรุณากรอกวิชา"); problems.push("วิชา"); firstBad = firstBad || el.fSubject; }
+    if (!g.url) { setFieldError("errUrl", "fUrl", "กรุณาวางลิงก์เกม"); problems.push("ลิงก์"); firstBad = firstBad || el.fUrl; }
+    else if (!/^https?:\/\//i.test(g.url)) { setFieldError("errUrl", "fUrl", "ลิงก์ต้องขึ้นต้นด้วย http:// หรือ https://"); problems.push("ลิงก์"); firstBad = firstBad || el.fUrl; }
+    if (g.grades.length === 0) { setFieldError("errGrades", null, "เลือกระดับชั้นอย่างน้อย 1 ชั้น"); problems.push("ระดับชั้น"); firstBad = firstBad || el.fGradeCustom; }
+    if (problems.length) {
+      el.formErrors.textContent = "กรุณาแก้ไข: " + problems.join(", ");
+      el.formErrors.hidden = false;
+    }
+    return firstBad;
+  }
+
   el.form.addEventListener("submit", function (e) {
     e.preventDefault();
     const g = readForm();
-    if (!g.title || !g.subject || !g.url) {
-      alert("กรุณากรอก ชื่อเกม / วิชา / ลิงก์ ให้ครบ");
-      return;
-    }
-    if (g.grades.length === 0) {
-      alert("กรุณาเลือกระดับชั้นอย่างน้อย 1 ชั้น");
-      return;
-    }
+    const bad = validateForm(g);
+    if (bad) { bad.focus(); return; }
     const idx = Number(el.editIndex.value);
     if (idx >= 0) {
       // แก้ไข: คง id เดิมไว้เสมอ (ลิงก์แชร์อ้างจาก id)
       g.id = games[idx].id || makeId(g.title, otherIds(idx));
       games[idx] = g;
+      changes.edited++;
     } else {
       // เพิ่มใหม่: สร้าง id ไม่ซ้ำจากชื่อ
       g.id = makeId(g.title, games.map(function (x) { return x.id; }));
       games.push(g);
+      changes.added++;
     }
     resetForm();
     renderList();
     setDirty(true);
+    updateChangeSummary();
   });
 
   function otherIds(exceptIdx) {
@@ -407,8 +519,26 @@
     localStorage.removeItem(LS_TOKEN);
     el.token.value = "";
     el.remember.checked = false;
+    updateTokenStored();
     setStatus(el.connStatus, "ลบ token ออกจากเบราว์เซอร์นี้แล้ว", "ok");
   });
+
+  // แสดง/ซ่อน token
+  el.btnToggleToken.addEventListener("click", function () {
+    const show = el.token.type === "password";
+    el.token.type = show ? "text" : "password";
+    el.btnToggleToken.textContent = show ? "🙈 ซ่อน" : "👁 แสดง";
+    el.btnToggleToken.setAttribute("aria-pressed", show ? "true" : "false");
+  });
+
+  // บอกว่า token ถูกเก็บในเครื่องนี้หรือไม่
+  function updateTokenStored() {
+    const stored = !!localStorage.getItem(LS_TOKEN);
+    el.tokenStored.textContent = stored
+      ? "🔒 เก็บ token ไว้ในเครื่องนี้แล้ว (กด “ลืม token” เพื่อลบ)"
+      : "token ไม่ได้ถูกเก็บ — ต้องวางใหม่ทุกครั้งที่เปิดหน้านี้";
+    el.tokenStored.className = "token-stored" + (stored ? " is-stored" : "");
+  }
 
   // ---------- Load games from GitHub (ตั้ง baseSha สำหรับกันเขียนทับ) ----------
   function loadGamesFromGitHub(c, opts) {
@@ -435,6 +565,7 @@
       renderList();
       resetForm();
       setDirty(false);
+      resetChanges();
       if (!opts.silent) setStatus(el.commitStatus, "✅ โหลดข้อมูลล่าสุดจาก GitHub แล้ว (" + games.length + " เกม)", "ok");
       return true;
     });
@@ -478,14 +609,21 @@
     }).then(function (j) {
       if (j && j.content && j.content.sha) gamesBaseSha = j.content.sha; // อัปเดต base เป็นเวอร์ชันล่าสุด
       setDirty(false);
+      resetChanges();
+      const now = new Date();
+      const time = now.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+      setStatus(el.commitStatus, "✅ บันทึกสำเร็จเมื่อ " + time + " น. — เว็บจะอัปเดตภายใน ~1 นาที ", "ok");
       const link = j && j.commit && j.commit.html_url;
-      setStatus(el.commitStatus, "✅ บันทึกสำเร็จ! เว็บจะอัปเดตอัตโนมัติภายใน ~1 นาที", "ok");
       if (link) {
         const a = document.createElement("a");
         a.href = link; a.target = "_blank"; a.rel = "noopener";
-        a.textContent = " ดู commit ↗"; a.className = "inline-link";
+        a.textContent = "ดู commit ↗"; a.className = "inline-link";
         el.commitStatus.appendChild(a);
       }
+      const site = document.createElement("a");
+      site.href = "index.html"; site.target = "_blank"; site.rel = "noopener";
+      site.textContent = " · เปิดหน้าเว็บเพื่อตรวจ ↗"; site.className = "inline-link";
+      el.commitStatus.appendChild(site);
     }).catch(function (err) {
       if (err.message === "CONFLICT") {
         setStatus(el.commitStatus,
@@ -639,10 +777,12 @@
   // ---------- Init ----------
   buildGradePicker();
   loadCfg();
+  updateTokenStored();
   ensureIds(games);
   renderList();
   resetForm();
   setDirty(false);
+  resetChanges();
   loadAnnouncementToForm(window.ANNOUNCEMENT || {});
   el.listNote.textContent =
     games.length + " เกม (จากข้อมูลที่โหลดมากับหน้านี้)";

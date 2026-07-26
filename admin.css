@@ -292,6 +292,120 @@ body.has-unsaved { padding-bottom: 72px; }
 
 .publish-bar .btn { flex-shrink: 0; }
 
+/* ---------- Phase 4: token, advanced, validation, list tools, snackbar ---------- */
+.token-row { display: flex; gap: 8px; }
+.token-row input { flex: 1; }
+.token-toggle { flex: 0 0 auto; padding: 10px 14px; white-space: nowrap; }
+
+.token-stored {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.token-stored.is-stored { color: #0a7d38; }
+@media (prefers-color-scheme: dark) { .token-stored.is-stored { color: #4ade80; } }
+
+.checkline em { font-style: normal; color: var(--text-muted); font-size: 0.85em; }
+
+.advanced {
+  margin-top: 16px;
+  border-top: 1px dashed var(--border);
+  padding-top: 12px;
+}
+.advanced > summary {
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.advanced .field-grid { margin-top: 12px; }
+
+/* ---------- Validation ---------- */
+.field-error {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  color: #c62828;
+}
+@media (prefers-color-scheme: dark) { .field-error { color: #f87171; } }
+
+.field input.invalid,
+.admin input.invalid {
+  border-color: #c62828;
+  box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.14);
+}
+
+.form-errors {
+  background: #fdecec;
+  border: 1px solid #f4c4c4;
+  color: #a12020;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.form-errors[hidden] { display: none; }
+@media (prefers-color-scheme: dark) {
+  .form-errors { background: #3a1f1f; border-color: #6b3535; color: #f4a4a4; }
+}
+
+/* ---------- List tools (ค้นหา/กรองในรายการ) ---------- */
+.list-tools {
+  display: flex;
+  gap: 8px;
+  margin: 4px 0 12px;
+  flex-wrap: wrap;
+}
+.list-tools input[type="search"] { flex: 1; min-width: 160px; }
+.list-tools select {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.list-empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 20px;
+  font-size: 0.9rem;
+}
+.list-empty[hidden] { display: none; }
+
+/* ---------- Snackbar (เลิกทำ) ---------- */
+.snackbar {
+  position: fixed;
+  left: 50%;
+  bottom: 84px;
+  transform: translateX(-50%);
+  z-index: 160;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #1e2433;
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  font-size: 0.9rem;
+  max-width: calc(100% - 32px);
+}
+.snackbar[hidden] { display: none; }
+.snackbar-btn {
+  background: none;
+  border: none;
+  color: #7cb0ff;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+/* ---------- Publish bar info + change summary ---------- */
+.publish-bar-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.change-summary { font-size: 0.8rem; color: var(--text-muted); font-weight: 400; }
+
 /* ---------- Responsive ---------- */
 @media (max-width: 560px) {
   .field-grid { grid-template-columns: 1fr; }
@@ -303,4 +417,5 @@ body.has-unsaved { padding-bottom: 72px; }
   .admin-list-item { flex-wrap: wrap; }
   .li-main { min-width: 60%; }
   .li-actions { margin-left: auto; }
+  .snackbar { bottom: 78px; }
 }

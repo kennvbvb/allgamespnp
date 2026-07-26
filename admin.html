@@ -34,49 +34,59 @@
         <p class="warn">⚠️ Token นี้เก็บไว้ในเบราว์เซอร์เครื่องนี้เท่านั้น ไม่ถูกอัปโหลดขึ้นเว็บ และนักเรียนไม่ต้องมี — อย่าใช้บนเครื่องสาธารณะ</p>
       </details>
 
-      <div class="field-grid">
-        <label class="field">
-          <span>เจ้าของ repo (owner)</span>
-          <input type="text" id="cfgOwner" value="kennvbvb" />
-        </label>
-        <label class="field">
-          <span>repo</span>
-          <input type="text" id="cfgRepo" value="allgamespnp" />
-        </label>
-        <label class="field">
-          <span>branch</span>
-          <input type="text" id="cfgBranch" value="main" />
-        </label>
-        <label class="field">
-          <span>ไฟล์ข้อมูล (path)</span>
-          <input type="text" id="cfgPath" value="games.js" />
-        </label>
-      </div>
       <label class="field">
         <span>GitHub Token</span>
-        <input type="password" id="cfgToken" placeholder="github_pat_…" autocomplete="off" />
+        <div class="token-row">
+          <input type="password" id="cfgToken" placeholder="github_pat_…" autocomplete="off" />
+          <button type="button" id="btnToggleToken" class="btn btn-ghost token-toggle" aria-label="แสดง/ซ่อน token" aria-pressed="false">👁 แสดง</button>
+        </div>
       </label>
       <label class="checkline">
-        <input type="checkbox" id="cfgRemember" checked />
-        <span>จำ token ไว้ในเบราว์เซอร์นี้</span>
+        <input type="checkbox" id="cfgRemember" />
+        <span>จำ token ไว้ในเบราว์เซอร์เครื่องนี้ <em>(อย่าเลือกถ้าใช้เครื่องสาธารณะ/ร่วมกับผู้อื่น)</em></span>
       </label>
+      <p class="token-stored" id="tokenStored"></p>
 
       <div class="btn-row">
         <button type="button" id="btnTest" class="btn btn-primary">🔌 ทดสอบการเชื่อมต่อ</button>
         <button type="button" id="btnForget" class="btn btn-ghost">🗑️ ลืม token เครื่องนี้</button>
       </div>
       <p class="status" id="connStatus"></p>
+
+      <details class="advanced">
+        <summary>⚙️ ตั้งค่าขั้นสูง (ปกติไม่ต้องแตะ)</summary>
+        <div class="field-grid">
+          <label class="field">
+            <span>เจ้าของ repo (owner)</span>
+            <input type="text" id="cfgOwner" value="kennvbvb" />
+          </label>
+          <label class="field">
+            <span>repo</span>
+            <input type="text" id="cfgRepo" value="allgamespnp" />
+          </label>
+          <label class="field">
+            <span>branch</span>
+            <input type="text" id="cfgBranch" value="main" />
+          </label>
+          <label class="field">
+            <span>ไฟล์ข้อมูล (path)</span>
+            <input type="text" id="cfgPath" value="games.js" />
+          </label>
+        </div>
+      </details>
     </section>
 
     <!-- ขั้นที่ 2: ฟอร์มเพิ่ม/แก้ไข -->
     <section class="admin-card">
       <h2 class="admin-h2" id="formHeading">2. เพิ่มเกมใหม่</h2>
-      <form id="gameForm" autocomplete="off">
+      <form id="gameForm" autocomplete="off" novalidate>
         <input type="hidden" id="editIndex" value="-1" />
+        <div class="form-errors" id="formErrors" role="alert" hidden></div>
         <div class="field-grid">
           <label class="field field-wide">
             <span>ชื่อเกม *</span>
-            <input type="text" id="fTitle" required maxlength="120" />
+            <input type="text" id="fTitle" maxlength="120" aria-describedby="errTitle" />
+            <p class="field-error" id="errTitle" hidden></p>
           </label>
           <label class="field field-wide">
             <span>คำอธิบายสั้นๆ</span>
@@ -84,12 +94,14 @@
           </label>
           <label class="field">
             <span>วิชา *</span>
-            <input type="text" id="fSubject" list="subjectList" required maxlength="60" />
+            <input type="text" id="fSubject" list="subjectList" maxlength="60" aria-describedby="errSubject" />
             <datalist id="subjectList"></datalist>
+            <p class="field-error" id="errSubject" hidden></p>
           </label>
           <label class="field field-wide">
             <span>ลิงก์เกม (URL) *</span>
-            <input type="url" id="fUrl" required placeholder="https://script.google.com/macros/s/…/exec" />
+            <input type="url" id="fUrl" placeholder="https://script.google.com/macros/s/…/exec" aria-describedby="errUrl" />
+            <p class="field-error" id="errUrl" hidden></p>
           </label>
           <label class="field">
             <span>ไอคอน (emoji)</span>
@@ -105,6 +117,7 @@
           <span class="field-label-inline">ระดับชั้น * (เลือกได้หลายชั้น)</span>
           <div class="grade-picker" id="gradePicker"></div>
           <input type="text" id="fGradeCustom" placeholder="เพิ่มระดับชั้นอื่น เช่น ปวช.1 (คั่นด้วยจุลภาค)" />
+          <p class="field-error" id="errGrades" hidden></p>
         </div>
 
         <div class="btn-row">
@@ -119,7 +132,16 @@
       <h2 class="admin-h2">3. รายการเกม <span class="count-pill" id="listCount">0</span>
         <span class="dirty-badge" id="dirtyBadge" hidden>● ยังไม่เผยแพร่</span></h2>
       <p class="status" id="listNote">กำลังโหลดข้อมูลปัจจุบัน…</p>
+
+      <div class="list-tools">
+        <input type="search" id="listSearch" placeholder="🔍 ค้นหาเกมในรายการ…" aria-label="ค้นหาเกมในรายการ" />
+        <select id="listSubjectFilter" aria-label="กรองตามวิชา">
+          <option value="">ทุกวิชา</option>
+        </select>
+      </div>
+
       <ul class="admin-list" id="gameList"></ul>
+      <p class="list-empty" id="listEmpty" hidden>ไม่พบเกมที่ตรงกับการค้นหา</p>
 
       <div class="commit-bar">
         <div class="btn-row">
@@ -167,9 +189,18 @@
 
   </main>
 
+  <!-- Snackbar เลิกทำ (โผล่หลังลบ) -->
+  <div class="snackbar" id="snackbar" hidden role="status">
+    <span id="snackbarText"></span>
+    <button type="button" id="snackbarAction" class="snackbar-btn">↩ เลิกทำ</button>
+  </div>
+
   <!-- แถบเผยแพร่ (โผล่เมื่อมีงานยังไม่บันทึก) -->
   <div class="publish-bar" id="publishBar" hidden>
-    <span class="publish-bar-text">● มีการแก้ไขที่ยังไม่เผยแพร่</span>
+    <div class="publish-bar-info">
+      <span class="publish-bar-text">● มีการแก้ไขที่ยังไม่เผยแพร่</span>
+      <span class="change-summary" id="changeSummary"></span>
+    </div>
     <button type="button" id="btnCommitSticky" class="btn btn-primary">💾 บันทึกขึ้นเว็บ</button>
   </div>
 
