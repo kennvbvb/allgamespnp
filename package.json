@@ -1,0 +1,14 @@
+{
+  "name": "allgamespnp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "รวมเกมการศึกษา (static site) — smoke tests",
+  "scripts": {
+    "test": "playwright test",
+    "test:links": "node scripts/check-links.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.10.1",
+    "@playwright/test": "1.56.1"
+  }
+}
