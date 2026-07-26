@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-src https:; connect-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'" />
   <meta name="description" content="รวมเกมการศึกษาแบ่งตามวิชาและระดับชั้น เปิดเล่นได้จากมือถือ" />
   <title>รวมเกมการศึกษา</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>" />
 </head>
 <body>
+  <a class="skip-link" href="#gameGrid">ข้ามไปยังรายการเกม</a>
   <header class="site-header">
     <div class="header-inner">
       <h1>🎮 รวมเกมการศึกษา</h1>
@@ -28,22 +30,22 @@
 
   <main class="container">
     <section class="filters" aria-label="ตัวกรอง">
-      <div class="filter-group">
-        <span class="filter-label">วิชา</span>
+      <div class="filter-group" role="group" aria-labelledby="subjectLabel">
+        <span class="filter-label" id="subjectLabel">วิชา</span>
         <div class="chip-row" id="subjectChips"></div>
       </div>
-      <div class="filter-group">
-        <span class="filter-label">ระดับชั้น</span>
+      <div class="filter-group" role="group" aria-labelledby="gradeLabel">
+        <span class="filter-label" id="gradeLabel">ระดับชั้น</span>
         <div class="chip-row" id="gradeChips"></div>
       </div>
     </section>
 
     <div class="result-bar">
-      <span id="resultCount"></span>
+      <span id="resultCount" role="status" aria-live="polite"></span>
       <button type="button" id="clearFilters" class="link-btn" hidden>ล้างตัวกรอง</button>
     </div>
 
-    <section class="game-grid" id="gameGrid" aria-live="polite"></section>
+    <section class="game-grid" id="gameGrid" tabindex="-1"></section>
 
     <p class="empty-state" id="emptyState" hidden>
       😅 ไม่พบเกมที่ตรงกับเงื่อนไข ลองล้างตัวกรองดูนะ

@@ -7,8 +7,9 @@
 (function () {
   "use strict";
 
-  const LS_TOKEN = "gamehub_gh_token";
-  const LS_CFG = "gamehub_gh_cfg";
+  // token เก็บใน sessionStorage เท่านั้น (หายเมื่อปิดแท็บ) — ไม่ค้างถาวรบน public origin
+  const SS_TOKEN = "gamehub_gh_token";
+  const LS_CFG = "gamehub_gh_cfg"; // owner/repo/branch/path (ไม่ใช่ความลับ) เก็บใน localStorage ได้
   const ANNOUNCE_PATH = "announcement.js";
 
   const GRADE_PRESET = [
@@ -88,6 +89,63 @@
     });
   }
 
+  function isHttpsUrl(u) {
+    try { return new URL(String(u)).protocol === "https:"; } catch (e) { return false; }
+  }
+
+  // ตรวจ JSON import ทีละ record → คืน { errors:[ข้อความ], clean:[record ที่ปกติแล้ว] }
+  function validateImportRecords(data) {
+    const errors = [];
+    const clean = [];
+    const usedIds = [];
+    data.forEach(function (raw, idx) {
+      const n = idx + 1;
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+        errors.push("เกมที่ " + n + ": ต้องเป็นอ็อบเจกต์"); return;
+      }
+      const g = {};
+      // title
+      if (typeof raw.title !== "string" || !raw.title.trim()) { errors.push("เกมที่ " + n + ": ไม่มีชื่อเกม"); }
+      else if (raw.title.length > 120) { errors.push("เกมที่ " + n + ": ชื่อเกมยาวเกิน 120 ตัวอักษร"); }
+      g.title = String(raw.title || "").trim();
+      // subject
+      if (typeof raw.subject !== "string" || !raw.subject.trim()) { errors.push("เกมที่ " + n + " (" + g.title + "): ไม่มีวิชา"); }
+      else if (raw.subject.length > 60) { errors.push("เกมที่ " + n + ": ชื่อวิชายาวเกินไป"); }
+      g.subject = String(raw.subject || "").trim();
+      // description
+      if (raw.description != null && typeof raw.description !== "string") { errors.push("เกมที่ " + n + ": คำอธิบายต้องเป็นข้อความ"); }
+      g.description = String(raw.description || "").slice(0, 240);
+      // grades
+      if (!Array.isArray(raw.grades) || raw.grades.length === 0 ||
+          !raw.grades.every(function (x) { return typeof x === "string" && x.trim(); })) {
+        errors.push("เกมที่ " + n + " (" + g.title + "): grades ต้องเป็น array ของข้อความอย่างน้อย 1 ชั้น");
+        g.grades = Array.isArray(raw.grades) ? raw.grades.filter(function (x) { return typeof x === "string" && x.trim(); }) : [];
+      } else { g.grades = raw.grades.map(function (x) { return x.trim(); }); }
+      // url — ต้องเป็น https
+      if (typeof raw.url !== "string" || !isHttpsUrl(raw.url)) { errors.push("เกมที่ " + n + " (" + g.title + "): url ต้องเป็น https://"); }
+      g.url = String(raw.url || "").trim();
+      // id
+      if (raw.id != null) {
+        if (typeof raw.id !== "string" || !/^[a-z0-9-]+$/.test(raw.id) || /^[0-9]+$/.test(raw.id)) {
+          errors.push("เกมที่ " + n + ": id ต้องเป็น a-z 0-9 ขีดกลาง และไม่เป็นเลขล้วน");
+        } else if (usedIds.indexOf(raw.id) !== -1) {
+          errors.push("เกมที่ " + n + ": id ซ้ำ (" + raw.id + ")");
+        } else { g.id = raw.id; usedIds.push(raw.id); }
+      }
+      // emoji / color (ไม่บังคับ)
+      if (raw.emoji != null) {
+        if (typeof raw.emoji !== "string" || raw.emoji.length > 8) errors.push("เกมที่ " + n + ": emoji ไม่ถูกต้อง");
+        else if (raw.emoji.trim()) g.emoji = raw.emoji.trim();
+      }
+      if (raw.color != null) {
+        if (typeof raw.color !== "string" || !/^#[0-9a-fA-F]{6}$/.test(raw.color)) errors.push("เกมที่ " + n + ": color ต้องเป็น #RRGGBB");
+        else g.color = raw.color;
+      }
+      clean.push(g);
+    });
+    return { errors: errors, clean: clean };
+  }
+
   function escapeHtml(str) {
     return String(str == null ? "" : str).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -122,7 +180,7 @@
       if (cfg.branch) el.branch.value = cfg.branch;
       if (cfg.path) el.path.value = cfg.path;
     } catch (e) { /* ignore */ }
-    const t = localStorage.getItem(LS_TOKEN);
+    const t = sessionStorage.getItem(SS_TOKEN);
     if (t) { el.token.value = t; el.remember.checked = true; }
   }
 
@@ -133,10 +191,11 @@
     };
     localStorage.setItem(LS_CFG, JSON.stringify(cfg));
     if (el.remember.checked && el.token.value.trim()) {
-      localStorage.setItem(LS_TOKEN, el.token.value.trim());
+      sessionStorage.setItem(SS_TOKEN, el.token.value.trim());
     } else {
-      localStorage.removeItem(LS_TOKEN);
+      sessionStorage.removeItem(SS_TOKEN);
     }
+    updateTokenStored();
   }
 
   function cfg() {
@@ -453,7 +512,7 @@
     if (!g.title) { setFieldError("errTitle", "fTitle", "กรุณากรอกชื่อเกม"); problems.push("ชื่อเกม"); firstBad = firstBad || el.fTitle; }
     if (!g.subject) { setFieldError("errSubject", "fSubject", "กรุณากรอกวิชา"); problems.push("วิชา"); firstBad = firstBad || el.fSubject; }
     if (!g.url) { setFieldError("errUrl", "fUrl", "กรุณาวางลิงก์เกม"); problems.push("ลิงก์"); firstBad = firstBad || el.fUrl; }
-    else if (!/^https?:\/\//i.test(g.url)) { setFieldError("errUrl", "fUrl", "ลิงก์ต้องขึ้นต้นด้วย http:// หรือ https://"); problems.push("ลิงก์"); firstBad = firstBad || el.fUrl; }
+    else if (!isHttpsUrl(g.url)) { setFieldError("errUrl", "fUrl", "ลิงก์ต้องเป็น https:// (เพื่อความปลอดภัย)"); problems.push("ลิงก์"); firstBad = firstBad || el.fUrl; }
     if (g.grades.length === 0) { setFieldError("errGrades", null, "เลือกระดับชั้นอย่างน้อย 1 ชั้น"); problems.push("ระดับชั้น"); firstBad = firstBad || el.fGradeCustom; }
     if (problems.length) {
       el.formErrors.textContent = "กรุณาแก้ไข: " + problems.join(", ");
@@ -516,11 +575,11 @@
   });
 
   el.btnForget.addEventListener("click", function () {
-    localStorage.removeItem(LS_TOKEN);
+    sessionStorage.removeItem(SS_TOKEN);
     el.token.value = "";
     el.remember.checked = false;
     updateTokenStored();
-    setStatus(el.connStatus, "ลบ token ออกจากเบราว์เซอร์นี้แล้ว", "ok");
+    setStatus(el.connStatus, "ลบ token ออกจากแท็บนี้แล้ว", "ok");
   });
 
   // แสดง/ซ่อน token
@@ -533,10 +592,10 @@
 
   // บอกว่า token ถูกเก็บในเครื่องนี้หรือไม่
   function updateTokenStored() {
-    const stored = !!localStorage.getItem(LS_TOKEN);
+    const stored = !!sessionStorage.getItem(SS_TOKEN);
     el.tokenStored.textContent = stored
-      ? "🔒 เก็บ token ไว้ในเครื่องนี้แล้ว (กด “ลืม token” เพื่อลบ)"
-      : "token ไม่ได้ถูกเก็บ — ต้องวางใหม่ทุกครั้งที่เปิดหน้านี้";
+      ? "🔒 เก็บ token ไว้ในแท็บนี้ชั่วคราว (หายเองเมื่อปิดแท็บ)"
+      : "token ไม่ได้ถูกเก็บ — ต้องวางใหม่เมื่อรีเฟรช/เปิดแท็บใหม่";
     el.tokenStored.className = "token-stored" + (stored ? " is-stored" : "");
   }
 
@@ -658,13 +717,22 @@
     let data;
     try { data = JSON.parse(raw); } catch (e) { setStatus(el.commitStatus, "JSON ไม่ถูกต้อง", "err"); return; }
     if (!Array.isArray(data)) { setStatus(el.commitStatus, "JSON ต้องเป็น array ของเกม", "err"); return; }
-    if (!confirm("แทนที่รายการปัจจุบันด้วยข้อมูลที่วาง (" + data.length + " เกม)?")) return;
-    games = data;
+
+    const result = validateImportRecords(data);
+    if (result.errors.length) {
+      const show = result.errors.slice(0, 8).join("\n");
+      const more = result.errors.length > 8 ? "\n…และอีก " + (result.errors.length - 8) + " รายการ" : "";
+      setStatus(el.commitStatus, "❌ นำเข้าไม่ได้ พบ " + result.errors.length + " ข้อผิดพลาด — ดูรายละเอียดในกล่องแจ้งเตือน", "err");
+      alert("ข้อมูลนำเข้าไม่ผ่านการตรวจ:\n\n" + show + more);
+      return;
+    }
+    if (!confirm("แทนที่รายการปัจจุบันด้วยข้อมูลที่วาง (" + result.clean.length + " เกม)?")) return;
+    games = result.clean;
     ensureIds(games);
     renderList();
     resetForm();
     setDirty(true);
-    setStatus(el.commitStatus, "นำเข้าแล้ว — กด “บันทึกขึ้นเว็บ” เพื่อให้ถาวร", "warn");
+    setStatus(el.commitStatus, "นำเข้าแล้ว (" + games.length + " เกม) — กด “บันทึกขึ้นเว็บ” เพื่อให้ถาวร", "warn");
   });
 
   // ---------- ประกาศหน้าเว็บ ----------

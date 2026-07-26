@@ -31,6 +31,23 @@ body {
   line-height: 1.55;
 }
 
+/* ---------- Skip link (คีย์บอร์ด) ---------- */
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -60px;
+  z-index: 300;
+  background: var(--primary);
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+.skip-link:focus { top: 8px; }
+.game-grid:focus { outline: none; }
+
 /* ---------- Header ---------- */
 .site-header {
   background: linear-gradient(135deg, #4f8ef7 0%, #7b5cf7 100%);
@@ -328,11 +345,11 @@ body {
   border: none;
   background: rgba(0, 0, 0, 0.08);
   color: inherit;
-  width: 28px;
-  height: 28px;
+  width: var(--touch-min);
+  height: var(--touch-min);
   border-radius: 50%;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   line-height: 1;
 }
 .announce-banner-close:hover { background: rgba(0, 0, 0, 0.16); }
@@ -402,10 +419,10 @@ body {
 
 .announce-close {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 34px;
-  height: 34px;
+  top: 6px;
+  right: 6px;
+  width: var(--touch-min);
+  height: var(--touch-min);
   border: none;
   border-radius: 50%;
   background: transparent;
@@ -692,9 +709,15 @@ body.modal-open {
   }
 
   .modal-panel {
-    height: 100vh;
+    height: 100vh;        /* fallback */
+    height: 100dvh;       /* กันชน browser toolbar บนมือถือ */
     width: 100%;
     border-radius: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .modal-header {
+    padding-top: max(14px, env(safe-area-inset-top));
   }
 
   .modal-footer {
