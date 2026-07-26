@@ -4,7 +4,7 @@
 
 window.ANNOUNCEMENT = {
   "enabled": true,
-  "important": false,
+  "important": true,
   "title": "ประกาศ",
   "message": "ยินดีต้อนรับสู่เว็บรวมเกมการศึกษา 🎮\nของคุณครูฌานวัฒน์ พานิชการ\nครูโรงเรียนวัดพนมพริก"
 };
