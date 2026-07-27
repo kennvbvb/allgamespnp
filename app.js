@@ -19,8 +19,21 @@
     "ม.1", "ม.2", "ม.3", "ม.4", "ม.5", "ม.6",
   ];
 
+  // โหมดพรีวิว (?preview=1): อ่านข้อมูลที่หน้า admin ส่งมาทาง sessionStorage
+  // แทนไฟล์ games.js/announcement.js เพื่อดูผลก่อนเผยแพร่จริง
+  const IS_PREVIEW = /(?:^|[?&])preview=1(?:&|$)/.test(location.search);
+  let sourceGames = Array.isArray(window.GAMES) ? window.GAMES : [];
+  if (IS_PREVIEW) {
+    try {
+      const pv = JSON.parse(sessionStorage.getItem("gamehub_preview_games") || "null");
+      if (Array.isArray(pv)) sourceGames = pv;
+      const pa = JSON.parse(sessionStorage.getItem("gamehub_preview_announcement") || "null");
+      if (pa && typeof pa === "object") window.ANNOUNCEMENT = pa;
+    } catch (e) { /* ignore */ }
+  }
+
   // เตรียมข้อมูลเกม: ใส่ id คงที่ (slug) + สีสำรองถ้าไม่มี
-  const games = (Array.isArray(window.GAMES) ? window.GAMES : []).map(function (g, i) {
+  const games = sourceGames.map(function (g, i) {
     return Object.assign({}, g, {
       id: g.id || String(i), // ใช้ slug คงที่จาก games.js; เกมเก่าที่ไม่มี id ใช้เลขลำดับ (เผื่อไว้)
       index: i,
@@ -603,7 +616,7 @@
     const a = window.ANNOUNCEMENT;
     if (!a || !a.enabled || !(a.message || a.title)) return;
     const sig = announceSignature(a);
-    if (announceDismissed(sig)) return;
+    if (!IS_PREVIEW && announceDismissed(sig)) return; // พรีวิวแสดงเสมอ (ไม่สนว่าเคยปิดไปแล้ว)
 
     if (a.important) showAnnounceDialog(a, sig);
     else showAnnounceBanner(a, sig);
@@ -703,6 +716,7 @@
 
   // ---------- PWA: ลงทะเบียน service worker + ปุ่มเพิ่มลงจอโฮม ----------
   function initPwa() {
+    if (IS_PREVIEW) return; // ไม่ลงทะเบียน SW ในโหมดพรีวิว จะได้ไม่แคชข้อมูลชั่วคราว
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", function () {
         navigator.serviceWorker.register("service-worker.js").catch(function () { /* เงียบไว้ */ });
@@ -729,7 +743,21 @@
     });
   }
 
+  // ---------- แถบบอกว่ากำลังดูตัวอย่าง (ยังไม่เผยแพร่) ----------
+  function showPreviewRibbon() {
+    if (!IS_PREVIEW) return;
+    document.body.classList.add("is-preview");
+    const bar = document.createElement("div");
+    bar.className = "preview-ribbon";
+    bar.setAttribute("role", "status");
+    bar.innerHTML =
+      '<span class="preview-ribbon-text">🔎 โหมดดูตัวอย่าง — ข้อมูลนี้ยังไม่เผยแพร่ (มาจากหน้าจัดการเกม)</span>' +
+      '<a class="preview-ribbon-close" href="index.html">ออกจากพรีวิว ✕</a>';
+    document.body.insertBefore(bar, document.body.firstChild);
+  }
+
   // ---------- Init ----------
+  showPreviewRibbon();
   readFiltersFromUrl();
   buildChips(el.subjectChips, uniqueSubjects(), "subject");
   buildChips(el.gradeChips, uniqueGrades(), "grade");

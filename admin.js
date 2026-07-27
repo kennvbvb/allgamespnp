@@ -26,6 +26,8 @@
   let gamesBaseSha = null;   // sha ของ games.js ตอนโหลดล่าสุด (null = ยังไม่เคยโหลดจาก GitHub)
   let annBaseSha = null;     // sha ของ announcement.js ตอนโหลดล่าสุด
   let dirty = false;         // มีการแก้รายการเกมที่ยังไม่ commit หรือไม่
+  let gameFormDirty = false; // พิมพ์ในฟอร์มเพิ่ม/แก้เกมค้างไว้ ยังไม่กด "เพิ่ม/บันทึก"
+  let announcementDirty = false; // แก้ฟอร์มประกาศค้างไว้ ยังไม่กด "บันทึกประกาศ"
 
   // ---------- DOM ----------
   const $ = function (id) { return document.getElementById(id); };
@@ -43,6 +45,7 @@
     btnSaveGame: $("btnSaveGame"), btnResetForm: $("btnResetForm"),
     list: $("gameList"), listCount: $("listCount"), listNote: $("listNote"),
     btnCommit: $("btnCommit"), btnReload: $("btnReload"), commitStatus: $("commitStatus"),
+    btnPreview: $("btnPreview"), btnPreviewSticky: $("btnPreviewSticky"),
     btnExport: $("btnExport"), btnImport: $("btnImport"), importBox: $("importBox"),
     annEnabled: $("annEnabled"), annTitle: $("annTitle"), annMessage: $("annMessage"),
     annImportant: $("annImportant"),
@@ -525,6 +528,7 @@
     el.formHeading.textContent = "2. เพิ่มเกมใหม่";
     el.btnSaveGame.textContent = "➕ เพิ่มเข้ารายการ";
     clearFormErrors();
+    gameFormDirty = false;
   }
 
   function startEdit(i) {
@@ -546,6 +550,7 @@
     el.formHeading.textContent = "2. แก้ไขเกม: " + g.title;
     el.btnSaveGame.textContent = "💾 บันทึกการแก้ไข";
     el.form.scrollIntoView({ behavior: "smooth", block: "start" });
+    gameFormDirty = false; // เพิ่งโหลดค่าเดิมเข้าฟอร์ม ยังไม่นับว่าค้าง จนกว่าจะพิมพ์แก้
   }
 
   function clearFormErrors() {
@@ -614,6 +619,19 @@
   }
 
   el.btnResetForm.addEventListener("click", resetForm);
+
+  // ทำเครื่องหมายว่ามีข้อความค้างในฟอร์มเกม (พิมพ์แล้วยังไม่กด "เพิ่ม/บันทึก")
+  ["input", "change"].forEach(function (evt) {
+    el.form.addEventListener(evt, function () { gameFormDirty = true; });
+  });
+
+  // ทำเครื่องหมายว่าแก้ประกาศค้าง (ยังไม่กด "บันทึกประกาศ")
+  [el.annEnabled, el.annImportant, el.annTitle, el.annMessage].forEach(function (node) {
+    if (!node) return;
+    ["input", "change"].forEach(function (evt) {
+      node.addEventListener(evt, function () { announcementDirty = true; });
+    });
+  });
 
   // ---------- Connection test ----------
   el.btnTest.addEventListener("click", function () {
@@ -765,6 +783,22 @@
   el.btnCommit.addEventListener("click", commitGames);
   if (el.btnCommitSticky) el.btnCommitSticky.addEventListener("click", commitGames);
 
+  // ---------- ดูตัวอย่างก่อนเผยแพร่ ----------
+  // ส่งรายการเกม+ประกาศปัจจุบันผ่าน sessionStorage แล้วเปิด index.html?preview=1
+  // (เปิดแบบไม่มี noopener เพื่อให้แท็บใหม่ได้ค่า sessionStorage ที่คัดลอกจากแท็บนี้)
+  const PREVIEW_GAMES = "gamehub_preview_games";
+  const PREVIEW_ANN = "gamehub_preview_announcement";
+  function openPreview() {
+    ensureIds(games);
+    try {
+      sessionStorage.setItem(PREVIEW_GAMES, JSON.stringify(games));
+      sessionStorage.setItem(PREVIEW_ANN, JSON.stringify(readAnnouncementForm()));
+    } catch (e) { /* ถ้าเก็บไม่ได้ก็ยังเปิดพรีวิวเวอร์ชันไฟล์ปัจจุบันได้ */ }
+    window.open("index.html?preview=1", "_blank");
+  }
+  if (el.btnPreview) el.btnPreview.addEventListener("click", openPreview);
+  if (el.btnPreviewSticky) el.btnPreviewSticky.addEventListener("click", openPreview);
+
   // ---------- Export / Import ----------
   el.btnExport.addEventListener("click", function () {
     const blob = new Blob([JSON.stringify(games, null, 2)], { type: "application/json" });
@@ -793,6 +827,7 @@
     if (!confirm("แทนที่รายการปัจจุบันด้วยข้อมูลที่วาง (" + result.clean.length + " เกม)?")) return;
     games = result.clean;
     ensureIds(games);
+    el.importBox.value = ""; // เคลียร์ช่องวาง จะได้ไม่นับเป็นงานค้าง
     renderList();
     resetForm();
     setDirty(true);
@@ -826,6 +861,7 @@
     if (el.annImportant) el.annImportant.checked = !!a.important;
     el.annTitle.value = a.title || "";
     el.annMessage.value = a.message || "";
+    announcementDirty = false;
   }
 
   function readAnnouncementForm() {
@@ -873,6 +909,7 @@
       return ghPutFile(c, ANNOUNCE_PATH, text, res.sha, msg);
     }).then(function (j) {
       if (j && j.content && j.content.sha) annBaseSha = j.content.sha;
+      announcementDirty = false;
       setStatus(el.annStatus,
         "✅ บันทึกประกาศแล้ว เว็บจะอัปเดตภายใน ~1 นาที" +
         (ann.enabled ? "" : " (ปิดประกาศแล้ว)"), "ok");
@@ -902,8 +939,14 @@
   });
 
   // เตือนก่อนออกจากหน้าเมื่อมีงานที่ยังไม่บันทึก
+  // ครอบคลุม: (1) รายการเกมที่ยังไม่ commit (2) ฟอร์มเกมที่พิมพ์ค้าง
+  //           (3) ประกาศที่แก้ยังไม่บันทึก (4) JSON ที่วางค้างในกล่องนำเข้า
+  function hasUnsaved() {
+    return dirty || gameFormDirty || announcementDirty ||
+      (el.importBox && el.importBox.value.trim() !== "");
+  }
   window.addEventListener("beforeunload", function (e) {
-    if (dirty) { e.preventDefault(); e.returnValue = ""; return ""; }
+    if (hasUnsaved()) { e.preventDefault(); e.returnValue = ""; return ""; }
   });
 
   // ---------- Init ----------

@@ -397,6 +397,30 @@ body {
   opacity: 1;
 }
 
+/* ---------- แถบโหมดพรีวิว ---------- */
+.preview-ribbon {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 16px;
+  padding: 8px 16px;
+  background: repeating-linear-gradient(45deg, #1f2733, #1f2733 12px, #26303f 12px, #26303f 24px);
+  color: #fde68a;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.preview-ribbon-close {
+  color: #fff;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
 /* ---------- แถบประกาศ (banner, ไม่บล็อก) ---------- */
 .announce-banner {
   background: linear-gradient(135deg, #fef3c7, #fde68a);
