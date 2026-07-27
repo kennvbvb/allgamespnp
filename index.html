@@ -38,6 +38,13 @@
         <span class="filter-label" id="gradeLabel">ระดับชั้น</span>
         <div class="chip-row" id="gradeChips"></div>
       </div>
+      <div class="filter-group" role="group" aria-labelledby="viewLabel">
+        <span class="filter-label" id="viewLabel">มุมมอง</span>
+        <div class="chip-row">
+          <button type="button" class="chip" id="viewFav" aria-pressed="false">❤️ เฉพาะโปรด</button>
+          <button type="button" class="chip" id="viewRecent" aria-pressed="false">🕘 เล่นล่าสุด</button>
+        </div>
+      </div>
     </section>
 
     <div class="result-bar">
@@ -111,7 +118,8 @@
         <a id="openFull" class="btn btn-primary" href="#" target="_blank" rel="noopener">
           ↗ เปิดในแท็บใหม่
         </a>
-        <button type="button" id="copyLink" class="btn btn-ghost">🔗 คัดลอกลิงก์</button>
+        <button type="button" id="favToggle" class="btn btn-ghost" aria-pressed="false">🤍 เพิ่มในโปรด</button>
+        <button type="button" id="copyLink" class="btn btn-ghost">🔗 คัดลอกลิงก์แชร์</button>
       </div>
     </div>
   </div>

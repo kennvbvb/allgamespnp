@@ -316,6 +316,15 @@ body {
   padding: 2px 8px;
 }
 
+/* ปุ่มโปรดในโมดัลตอนกดแล้ว */
+.btn-ghost.is-fav {
+  background: #fde8ec;
+  color: #c2185b;
+}
+@media (prefers-color-scheme: dark) {
+  .btn-ghost.is-fav { background: #3a1f28; color: #f48fb1; }
+}
+
 /* แถบเรียง/เครื่องมือในแถวผลลัพธ์ */
 .result-tools {
   display: flex;

@@ -39,8 +39,8 @@
     return null;
   }
 
-  // สถานะตัวกรอง (null = ทั้งหมด) + การจัดเรียง ("" = ตามลำดับในไฟล์)
-  const state = { subject: null, grade: null, search: "", sort: "" };
+  // สถานะตัวกรอง (null = ทั้งหมด) + การจัดเรียง ("" = ตามลำดับในไฟล์) + มุมมอง ("" | "fav" | "recent")
+  const state = { subject: null, grade: null, search: "", sort: "", view: "" };
 
   // ---------- DOM ----------
   const el = {
@@ -63,7 +63,30 @@
     modalTags: document.getElementById("modalTags"),
     openFull: document.getElementById("openFull"),
     copyLink: document.getElementById("copyLink"),
+    favToggle: document.getElementById("favToggle"),
+    viewFav: document.getElementById("viewFav"),
+    viewRecent: document.getElementById("viewRecent"),
   };
+
+  // ---------- รายการโปรด + เล่นล่าสุด (เก็บใน localStorage ต่อเครื่อง) ----------
+  const LS_FAV = "gamehub_favorites";
+  const LS_RECENT = "gamehub_recent";
+  function lsGet(key) { try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch (e) { return []; } }
+  function lsSet(key, arr) { try { localStorage.setItem(key, JSON.stringify(arr)); } catch (e) { /* ignore */ } }
+  function isFavorite(id) { return lsGet(LS_FAV).indexOf(id) !== -1; }
+  function toggleFavorite(id) {
+    const favs = lsGet(LS_FAV);
+    const i = favs.indexOf(id);
+    if (i === -1) favs.push(id); else favs.splice(i, 1);
+    lsSet(LS_FAV, favs);
+    return i === -1; // true = เพิ่งเพิ่ม
+  }
+  function pushRecent(id) {
+    let r = lsGet(LS_RECENT).filter(function (x) { return x !== id; });
+    r.unshift(id);
+    r = r.slice(0, 8);
+    lsSet(LS_RECENT, r);
+  }
 
   // ---------- Utils ----------
   function sortGrades(list) {
@@ -128,6 +151,12 @@
       c.classList.toggle("active", on);
       c.setAttribute("aria-pressed", on ? "true" : "false");
     });
+    [["fav", el.viewFav], ["recent", el.viewRecent]].forEach(function (pair) {
+      if (!pair[1]) return;
+      const on = state.view === pair[0];
+      pair[1].classList.toggle("active", on);
+      pair[1].setAttribute("aria-pressed", on ? "true" : "false");
+    });
   }
 
   // ---------- Sync ตัวกรอง/ค้นหา/เรียง กับ URL (refresh/แชร์ผลลัพธ์ได้) ----------
@@ -137,6 +166,7 @@
     state.grade = p.get("grade") || null;
     state.search = p.get("q") || "";
     state.sort = p.get("sort") || "";
+    state.view = p.get("view") || "";
     if (el.search) el.search.value = state.search;
     if (el.sortSelect) el.sortSelect.value = state.sort;
   }
@@ -147,6 +177,7 @@
     if (state.grade) p.set("grade", state.grade);
     if (state.search.trim()) p.set("q", state.search.trim());
     if (state.sort) p.set("sort", state.sort);
+    if (state.view) p.set("view", state.view);
     const qs = p.toString();
     const url = location.pathname + (qs ? "?" + qs : "") + location.hash;
     if (history.replaceState) history.replaceState(history.state, "", url);
@@ -155,7 +186,7 @@
   // ---------- Filter + Sort ----------
   function filteredGames() {
     const q = state.search.trim().toLowerCase();
-    const list = games.filter(function (g) {
+    let list = games.filter(function (g) {
       if (state.subject && g.subject !== state.subject) return false;
       if (state.grade && g.grades.indexOf(state.grade) === -1) return false;
       if (q) {
@@ -165,6 +196,15 @@
       }
       return true;
     });
+    if (state.view === "fav") {
+      const favs = lsGet(LS_FAV);
+      list = list.filter(function (g) { return favs.indexOf(g.id) !== -1; });
+    } else if (state.view === "recent") {
+      const r = lsGet(LS_RECENT);
+      list = list.filter(function (g) { return r.indexOf(g.id) !== -1; });
+      list.sort(function (a, b) { return r.indexOf(a.id) - r.indexOf(b.id); });
+      return list; // ลำดับ "เล่นล่าสุด" มาก่อน sort
+    }
     return sortGames(list);
   }
 
@@ -243,7 +283,12 @@
     const total = games.length;
     el.resultCount.textContent = "แสดง " + list.length + " จาก " + total + " เกม";
     el.emptyState.hidden = list.length !== 0;
-    const hasFilter = state.subject || state.grade || state.search.trim();
+    if (list.length === 0) {
+      if (state.view === "fav") el.emptyState.textContent = "💛 ยังไม่มีเกมโปรด — กดการ์ดเกมแล้วกด “เพิ่มในโปรด” ในหน้าต่างเกม";
+      else if (state.view === "recent") el.emptyState.textContent = "🕘 ยังไม่มีเกมที่เพิ่งเล่น";
+      else el.emptyState.textContent = "😅 ไม่พบเกมที่ตรงกับเงื่อนไข ลองล้างตัวกรองดูนะ";
+    }
+    const hasFilter = state.subject || state.grade || state.search.trim() || state.view;
     el.clearFilters.hidden = !hasFilter;
   }
 
@@ -311,6 +356,23 @@
   let modalOpener = null;
   let frameTimer = null;
   let currentGameUrl = "";
+  let currentModalGame = null;
+
+  function updateFavButton() {
+    if (!el.favToggle || !currentModalGame) return;
+    const fav = isFavorite(currentModalGame.id);
+    el.favToggle.textContent = fav ? "❤️ อยู่ในโปรด" : "🤍 เพิ่มในโปรด";
+    el.favToggle.setAttribute("aria-pressed", fav ? "true" : "false");
+    el.favToggle.classList.toggle("is-fav", fav);
+  }
+  if (el.favToggle) {
+    el.favToggle.addEventListener("click", function () {
+      if (!currentModalGame) return;
+      toggleFavorite(currentModalGame.id);
+      updateFavButton();
+      if (state.view === "fav") render(); // อัปเดตกริดถ้ากำลังดูเฉพาะโปรด
+    });
+  }
 
   // โหลดเกมในกรอบ พร้อม timeout + สถานะ error (มีปุ่มลองใหม่/เปิดแท็บใหม่)
   function loadGameFrame(url) {
@@ -355,6 +417,10 @@
     el.copyLink.dataset.url = location.origin + location.pathname + "#game=" + encodeURIComponent(g.id);
     el.copyLink.textContent = "🔗 คัดลอกลิงก์แชร์";
     el.frame.title = "พรีวิวเกม " + g.title;
+
+    currentModalGame = g;
+    pushRecent(g.id);
+    updateFavButton();
 
     loadGameFrame(g.url);
 
@@ -416,10 +482,20 @@
     });
   }
 
+  function toggleView(v) {
+    state.view = state.view === v ? "" : v;
+    syncChips();
+    render();
+    writeFiltersToUrl();
+  }
+  if (el.viewFav) el.viewFav.addEventListener("click", function () { toggleView("fav"); });
+  if (el.viewRecent) el.viewRecent.addEventListener("click", function () { toggleView("recent"); });
+
   el.clearFilters.addEventListener("click", function () {
     state.subject = null;
     state.grade = null;
     state.search = "";
+    state.view = "";
     el.search.value = "";
     syncChips();
     render();
