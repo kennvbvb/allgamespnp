@@ -3,11 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; frame-src https:; connect-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; frame-src https:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'" />
   <meta name="description" content="รวมเกมการศึกษาแบ่งตามวิชาและระดับชั้น เปิดเล่นได้จากมือถือ" />
   <title>รวมเกมการศึกษา</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="canonical" href="https://kennvbvb.github.io/allgamespnp/" />
+  <meta name="theme-color" content="#4f8ef7" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+
+  <!-- Open Graph / Twitter (แชร์แล้วขึ้นรูป+ชื่อ) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="รวมเกมการศึกษา" />
+  <meta property="og:locale" content="th_TH" />
+  <meta property="og:title" content="รวมเกมการศึกษา" />
+  <meta property="og:description" content="เลือกวิชาและระดับชั้น แล้วกดเล่นได้เลย — เปิดจากมือถือได้" />
+  <meta property="og:url" content="https://kennvbvb.github.io/allgamespnp/" />
+  <meta property="og:image" content="https://kennvbvb.github.io/allgamespnp/og-image.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="รวมเกมการศึกษา" />
+  <meta name="twitter:description" content="เลือกวิชาและระดับชั้น แล้วกดเล่นได้เลย — เปิดจากมือถือได้" />
+  <meta name="twitter:image" content="https://kennvbvb.github.io/allgamespnp/og-image.png" />
+
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <a class="skip-link" href="#gameGrid">ข้ามไปยังรายการเกม</a>
@@ -69,6 +90,7 @@
   </main>
 
   <footer class="site-footer">
+    <p><button type="button" id="installBtn" class="link-btn" hidden>📲 เพิ่มลงจอโฮม</button></p>
     <p>รวมลิงก์เกมจาก Google Apps Script ไว้ในที่เดียว</p>
     <p><a class="admin-entry" href="admin.html">⚙️ จัดการเกม (สำหรับครู)</a></p>
   </footer>

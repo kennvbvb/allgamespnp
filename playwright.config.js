@@ -17,6 +17,9 @@ module.exports = defineConfig({
   use: {
     baseURL: "http://127.0.0.1:8000",
     trace: "on-first-retry",
+    // ปิด service worker ในเทสต์ทั่วไป กันแคชมากวน route ที่ mock games.js/announcement.js
+    // (เทสต์ PWA จะเปิดเองด้วย test.use)
+    serviceWorkers: "block",
   },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },

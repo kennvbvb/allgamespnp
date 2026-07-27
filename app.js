@@ -66,6 +66,7 @@
     favToggle: document.getElementById("favToggle"),
     viewFav: document.getElementById("viewFav"),
     viewRecent: document.getElementById("viewRecent"),
+    installBtn: document.getElementById("installBtn"),
   };
 
   // ---------- รายการโปรด + เล่นล่าสุด (เก็บใน localStorage ต่อเครื่อง) ----------
@@ -657,6 +658,53 @@
     overlay.querySelector(".announce-close").focus();
   }
 
+  // ---------- SEO: JSON-LD ItemList (สร้างจากรายชื่อเกม) ----------
+  function injectJsonLd() {
+    try {
+      const data = {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": "รวมเกมการศึกษา",
+        "numberOfItems": games.length,
+        "itemListElement": games.map(function (g, i) {
+          return { "@type": "ListItem", "position": i + 1, "name": g.title };
+        }),
+      };
+      const s = document.createElement("script");
+      s.type = "application/ld+json";
+      s.textContent = JSON.stringify(data);
+      document.head.appendChild(s);
+    } catch (e) { /* ignore */ }
+  }
+
+  // ---------- PWA: ลงทะเบียน service worker + ปุ่มเพิ่มลงจอโฮม ----------
+  function initPwa() {
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("service-worker.js").catch(function () { /* เงียบไว้ */ });
+      });
+    }
+    let deferredPrompt = null;
+    window.addEventListener("beforeinstallprompt", function (e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (el.installBtn) el.installBtn.hidden = false;
+    });
+    if (el.installBtn) {
+      el.installBtn.addEventListener("click", function () {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.finally(function () {
+          deferredPrompt = null;
+          el.installBtn.hidden = true;
+        });
+      });
+    }
+    window.addEventListener("appinstalled", function () {
+      if (el.installBtn) el.installBtn.hidden = true;
+    });
+  }
+
   // ---------- Init ----------
   readFiltersFromUrl();
   buildChips(el.subjectChips, uniqueSubjects(), "subject");
@@ -665,4 +713,6 @@
   render();
   openFromHash();
   showAnnouncement();
+  injectJsonLd();
+  initPwa();
 })();
