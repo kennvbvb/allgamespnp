@@ -38,6 +38,7 @@
     fEmoji: $("fEmoji"), fColor: $("fColor"), fGradeCustom: $("fGradeCustom"),
     fTopic: $("fTopic"), fMinutes: $("fMinutes"), fMode: $("fMode"),
     fBadge: $("fBadge"), fCover: $("fCover"), errCover: $("errCover"),
+    fTags: $("fTags"), tagList: $("tagList"),
     subjectList: $("subjectList"), gradePicker: $("gradePicker"),
     btnSaveGame: $("btnSaveGame"), btnResetForm: $("btnResetForm"),
     list: $("gameList"), listCount: $("listCount"), listNote: $("listNote"),
@@ -358,6 +359,16 @@
     }).join("");
   }
 
+  function refreshTagList() {
+    const set = {};
+    games.forEach(function (g) { (g.tags || []).forEach(function (t) { set[t] = 1; }); });
+    if (el.tagList) {
+      el.tagList.innerHTML = Object.keys(set).map(function (t) {
+        return '<option value="' + escapeHtml(t) + '"></option>';
+      }).join("");
+    }
+  }
+
   // ---------- Render list (มีค้นหา/กรองในรายการ) ----------
   function matchesListFilter(g) {
     if (listState.subject && g.subject !== listState.subject) return false;
@@ -403,6 +414,7 @@
     el.listCount.textContent = String(games.length);
     el.listEmpty.hidden = shown !== 0;
     refreshSubjectList();
+    refreshTagList();
     refreshListSubjectFilter();
   }
 
@@ -495,6 +507,8 @@
     const mode = el.fMode.value.trim(); if (mode) g.mode = mode;
     if (el.fBadge.value) g.badge = el.fBadge.value;
     const cover = el.fCover.value.trim(); if (cover) g.cover = cover;
+    const tags = el.fTags.value.split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+    if (tags.length) g.tags = tags;
     return g;
   }
 
@@ -527,6 +541,7 @@
     el.fMode.value = g.mode || "";
     el.fBadge.value = g.badge || "";
     el.fCover.value = g.cover || "";
+    el.fTags.value = Array.isArray(g.tags) ? g.tags.join(", ") : "";
     setSelectedGrades(g.grades || []);
     el.formHeading.textContent = "2. แก้ไขเกม: " + g.title;
     el.btnSaveGame.textContent = "💾 บันทึกการแก้ไข";
@@ -578,7 +593,6 @@
       // แก้ไข: คง id/added/tags เดิมไว้ (ลิงก์แชร์อ้างจาก id, added ใช้เรียง "ใหม่ล่าสุด")
       g.id = games[idx].id || makeId(g.title, otherIds(idx));
       if (games[idx].added) g.added = games[idx].added;
-      if (games[idx].tags) g.tags = games[idx].tags;
       games[idx] = g;
       changes.edited++;
     } else {

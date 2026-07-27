@@ -40,13 +40,15 @@
   }
 
   // สถานะตัวกรอง (null = ทั้งหมด) + การจัดเรียง ("" = ตามลำดับในไฟล์) + มุมมอง ("" | "fav" | "recent")
-  const state = { subject: null, grade: null, search: "", sort: "", view: "" };
+  const state = { subject: null, grade: null, tag: null, search: "", sort: "", view: "" };
 
   // ---------- DOM ----------
   const el = {
     grid: document.getElementById("gameGrid"),
     subjectChips: document.getElementById("subjectChips"),
     gradeChips: document.getElementById("gradeChips"),
+    tagChips: document.getElementById("tagChips"),
+    tagFilterGroup: document.getElementById("tagFilterGroup"),
     search: document.getElementById("searchInput"),
     sortSelect: document.getElementById("sortSelect"),
     resultCount: document.getElementById("resultCount"),
@@ -121,6 +123,16 @@
     return sortGrades(Array.from(set));
   }
 
+  function uniqueTags() {
+    const set = new Set();
+    games.forEach(function (g) {
+      if (Array.isArray(g.tags)) g.tags.forEach(function (t) { if (t) set.add(t); });
+    });
+    return Array.from(set).sort(function (a, b) {
+      return a.localeCompare(b, "th");
+    });
+  }
+
   // ---------- Build filter chips ----------
   function buildChips(container, values, key) {
     container.innerHTML = "";
@@ -152,6 +164,11 @@
       c.classList.toggle("active", on);
       c.setAttribute("aria-pressed", on ? "true" : "false");
     });
+    document.querySelectorAll("#tagChips .chip").forEach(function (c) {
+      const on = state.tag === c.dataset.value;
+      c.classList.toggle("active", on);
+      c.setAttribute("aria-pressed", on ? "true" : "false");
+    });
     [["fav", el.viewFav], ["recent", el.viewRecent]].forEach(function (pair) {
       if (!pair[1]) return;
       const on = state.view === pair[0];
@@ -165,6 +182,7 @@
     const p = new URLSearchParams(location.search);
     state.subject = p.get("subject") || null;
     state.grade = p.get("grade") || null;
+    state.tag = p.get("tag") || null;
     state.search = p.get("q") || "";
     state.sort = p.get("sort") || "";
     state.view = p.get("view") || "";
@@ -176,6 +194,7 @@
     const p = new URLSearchParams();
     if (state.subject) p.set("subject", state.subject);
     if (state.grade) p.set("grade", state.grade);
+    if (state.tag) p.set("tag", state.tag);
     if (state.search.trim()) p.set("q", state.search.trim());
     if (state.sort) p.set("sort", state.sort);
     if (state.view) p.set("view", state.view);
@@ -190,6 +209,7 @@
     let list = games.filter(function (g) {
       if (state.subject && g.subject !== state.subject) return false;
       if (state.grade && g.grades.indexOf(state.grade) === -1) return false;
+      if (state.tag && (!Array.isArray(g.tags) || g.tags.indexOf(state.tag) === -1)) return false;
       if (q) {
         const hay = (g.title + " " + (g.description || "") + " " + g.subject +
           " " + (g.topic || "") + " " + (g.tags ? g.tags.join(" ") : "")).toLowerCase();
@@ -289,7 +309,7 @@
       else if (state.view === "recent") el.emptyState.textContent = "🕘 ยังไม่มีเกมที่เพิ่งเล่น";
       else el.emptyState.textContent = "😅 ไม่พบเกมที่ตรงกับเงื่อนไข ลองล้างตัวกรองดูนะ";
     }
-    const hasFilter = state.subject || state.grade || state.search.trim() || state.view;
+    const hasFilter = state.subject || state.grade || state.tag || state.search.trim() || state.view;
     el.clearFilters.hidden = !hasFilter;
   }
 
@@ -410,7 +430,10 @@
         .map(function (gr) {
           return '<span class="tag tag-grade">' + escapeHtml(gr) + "</span>";
         })
-        .join("");
+        .join("") +
+      (Array.isArray(g.tags) ? g.tags.map(function (t) {
+        return '<span class="tag tag-topic">#' + escapeHtml(t) + "</span>";
+      }).join("") : "");
 
     el.openFull.href = g.url;
     if (el.errOpenNew) el.errOpenNew.href = g.url;
@@ -495,6 +518,7 @@
   el.clearFilters.addEventListener("click", function () {
     state.subject = null;
     state.grade = null;
+    state.tag = null;
     state.search = "";
     state.view = "";
     el.search.value = "";
@@ -709,6 +733,9 @@
   readFiltersFromUrl();
   buildChips(el.subjectChips, uniqueSubjects(), "subject");
   buildChips(el.gradeChips, uniqueGrades(), "grade");
+  const tags = uniqueTags();
+  if (el.tagChips) buildChips(el.tagChips, tags, "tag");
+  if (el.tagFilterGroup) el.tagFilterGroup.hidden = tags.length === 0;
   syncChips();
   render();
   openFromHash();

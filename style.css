@@ -126,6 +126,10 @@ body {
   gap: 8px;
 }
 
+.filter-group[hidden] {
+  display: none;
+}
+
 .filter-label {
   font-weight: 700;
   font-size: 0.9rem;
@@ -352,13 +356,19 @@ body {
 }
 
 .tag-subject {
+  /* พื้นอ่อนตามสีการ์ด แต่ตัวอักษรเข้มคงที่ เพื่อให้ผ่าน contrast AA ทุกสีการ์ด */
   background: color-mix(in srgb, var(--card-color, var(--primary)) 16%, #fff);
-  color: color-mix(in srgb, var(--card-color, var(--primary)) 82%, #000);
+  color: #1f2733;
 }
 
 .tag-grade {
   background: #eef1f6;
   color: #55607a;
+}
+
+.tag-topic {
+  background: color-mix(in srgb, var(--primary) 12%, #fff);
+  color: var(--primary);
 }
 
 /* ---------- Empty ---------- */
@@ -380,7 +390,6 @@ body {
 .site-footer .admin-entry {
   color: var(--text-muted);
   text-decoration: none;
-  opacity: 0.75;
 }
 
 .site-footer .admin-entry:hover {
@@ -803,9 +812,19 @@ body.modal-open {
     --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.5);
   }
 
+  .tag-subject {
+    background: color-mix(in srgb, var(--card-color, var(--primary-bright)) 26%, #1c212d);
+    color: #eef2fb;
+  }
+
   .tag-grade {
     background: #2c3342;
     color: #c2c9d8;
+  }
+
+  .tag-topic {
+    background: color-mix(in srgb, var(--primary-bright) 22%, #1c212d);
+    color: var(--primary-bright);
   }
 
   .icon-btn,
