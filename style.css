@@ -277,6 +277,64 @@ body {
   border-radius: 999px;
 }
 
+/* ป้ายมุมการ์ด (แนะนำ/ใหม่) */
+.card-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--card-color, var(--primary));
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+}
+
+/* รูปปกเกม (ทางเลือก) */
+.card-media {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg);
+}
+.card-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* แถวข้อมูลย่อ: เวลาเล่น / โหมด */
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.card-meta span {
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 2px 8px;
+}
+
+/* แถบเรียง/เครื่องมือในแถวผลลัพธ์ */
+.result-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sort-label { font-size: 0.85rem; color: var(--text-muted); }
+.sort-select {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  min-height: 40px;
+}
+
 .tag {
   font-size: 0.75rem;
   font-weight: 700;

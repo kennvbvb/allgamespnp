@@ -121,6 +121,42 @@
           <p class="field-error" id="errGrades" hidden></p>
         </div>
 
+        <details class="more-fields">
+          <summary>รายละเอียดเพิ่มเติม (ไม่บังคับ) — หัวข้อย่อย, เวลาเล่น, โหมด, ป้าย, รูปปก</summary>
+          <div class="field-grid">
+            <label class="field">
+              <span>หัวข้อย่อย</span>
+              <input type="text" id="fTopic" maxlength="60" placeholder="เช่น ประวัติศาสตร์, หน้าที่พลเมือง" />
+            </label>
+            <label class="field">
+              <span>เวลาเล่น (นาที)</span>
+              <input type="number" id="fMinutes" min="1" max="180" placeholder="เช่น 15" />
+            </label>
+            <label class="field">
+              <span>โหมดการเล่น</span>
+              <input type="text" id="fMode" list="modeList" maxlength="40" placeholder="เดี่ยว / ทีม / ครูคุมจอ" />
+              <datalist id="modeList">
+                <option value="เดี่ยว"></option>
+                <option value="ทีม"></option>
+                <option value="ครูคุมจอ"></option>
+              </datalist>
+            </label>
+            <label class="field">
+              <span>ป้าย</span>
+              <select id="fBadge">
+                <option value="">ไม่มี</option>
+                <option value="แนะนำ">⭐ แนะนำ</option>
+                <option value="ใหม่">🆕 ใหม่</option>
+              </select>
+            </label>
+            <label class="field field-wide">
+              <span>รูปปก (URL รูปภาพ https)</span>
+              <input type="url" id="fCover" placeholder="https://…/cover.jpg (ไม่ใส่ = ใช้ไอคอน emoji)" />
+              <p class="field-error" id="errCover" hidden></p>
+            </label>
+          </div>
+        </details>
+
         <div class="btn-row">
           <button type="submit" class="btn btn-primary" id="btnSaveGame">➕ เพิ่มเข้ารายการ</button>
           <button type="button" class="btn btn-ghost" id="btnResetForm">ล้างฟอร์ม</button>

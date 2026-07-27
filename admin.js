@@ -36,6 +36,8 @@
     form: $("gameForm"), formHeading: $("formHeading"), editIndex: $("editIndex"),
     fTitle: $("fTitle"), fDesc: $("fDesc"), fSubject: $("fSubject"), fUrl: $("fUrl"),
     fEmoji: $("fEmoji"), fColor: $("fColor"), fGradeCustom: $("fGradeCustom"),
+    fTopic: $("fTopic"), fMinutes: $("fMinutes"), fMode: $("fMode"),
+    fBadge: $("fBadge"), fCover: $("fCover"), errCover: $("errCover"),
     subjectList: $("subjectList"), gradePicker: $("gradePicker"),
     btnSaveGame: $("btnSaveGame"), btnResetForm: $("btnResetForm"),
     list: $("gameList"), listCount: $("listCount"), listNote: $("listNote"),
@@ -141,6 +143,26 @@
         if (typeof raw.color !== "string" || !/^#[0-9a-fA-F]{6}$/.test(raw.color)) errors.push("เกมที่ " + n + ": color ต้องเป็น #RRGGBB");
         else g.color = raw.color;
       }
+      // ฟิลด์เพิ่มเติม (ไม่บังคับ)
+      if (raw.topic != null) { if (typeof raw.topic === "string") g.topic = raw.topic.trim(); }
+      if (raw.mode != null) { if (typeof raw.mode === "string") g.mode = raw.mode.trim(); }
+      if (raw.minutes != null && raw.minutes !== "") {
+        const m = Number(raw.minutes);
+        if (!isFinite(m) || m <= 0) errors.push("เกมที่ " + n + ": minutes ต้องเป็นตัวเลขบวก");
+        else g.minutes = m;
+      }
+      if (raw.badge != null && raw.badge !== "") {
+        if (["แนะนำ", "ใหม่"].indexOf(raw.badge) === -1) errors.push("เกมที่ " + n + ": badge ต้องเป็น แนะนำ หรือ ใหม่");
+        else g.badge = raw.badge;
+      }
+      if (raw.cover != null && raw.cover !== "") {
+        if (typeof raw.cover !== "string" || !isHttpsUrl(raw.cover)) errors.push("เกมที่ " + n + ": cover ต้องเป็นลิงก์ https://");
+        else g.cover = raw.cover;
+      }
+      if (Array.isArray(raw.tags)) {
+        g.tags = raw.tags.filter(function (x) { return typeof x === "string" && x.trim(); }).map(function (x) { return x.trim(); });
+      }
+      if (raw.added != null && typeof raw.added === "string") g.added = raw.added;
       clean.push(g);
     });
     return { errors: errors, clean: clean };
@@ -275,6 +297,13 @@
       };
       if (g.emoji) o.emoji = g.emoji;
       if (g.color) o.color = g.color;
+      if (g.topic) o.topic = g.topic;
+      if (g.minutes != null && g.minutes !== "") o.minutes = Number(g.minutes);
+      if (g.mode) o.mode = g.mode;
+      if (g.badge) o.badge = g.badge;
+      if (g.cover) o.cover = g.cover;
+      if (Array.isArray(g.tags) && g.tags.length) o.tags = g.tags;
+      if (g.added) o.added = g.added;
       return o;
     });
     return header +
@@ -451,7 +480,7 @@
 
   // ---------- Form ----------
   function readForm() {
-    return {
+    const g = {
       title: el.fTitle.value.trim(),
       description: el.fDesc.value.trim(),
       subject: el.fSubject.value.trim(),
@@ -460,6 +489,18 @@
       emoji: el.fEmoji.value.trim(),
       color: el.fColor.value,
     };
+    // ฟิลด์เพิ่มเติม (ไม่บังคับ)
+    const topic = el.fTopic.value.trim(); if (topic) g.topic = topic;
+    const minutes = el.fMinutes.value.trim(); if (minutes) g.minutes = Number(minutes);
+    const mode = el.fMode.value.trim(); if (mode) g.mode = mode;
+    if (el.fBadge.value) g.badge = el.fBadge.value;
+    const cover = el.fCover.value.trim(); if (cover) g.cover = cover;
+    return g;
+  }
+
+  function todayISO() {
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
 
   function resetForm() {
@@ -481,6 +522,11 @@
     el.fUrl.value = g.url || "";
     el.fEmoji.value = g.emoji || "";
     el.fColor.value = g.color || "#4f8ef7";
+    el.fTopic.value = g.topic || "";
+    el.fMinutes.value = g.minutes != null ? g.minutes : "";
+    el.fMode.value = g.mode || "";
+    el.fBadge.value = g.badge || "";
+    el.fCover.value = g.cover || "";
     setSelectedGrades(g.grades || []);
     el.formHeading.textContent = "2. แก้ไขเกม: " + g.title;
     el.btnSaveGame.textContent = "💾 บันทึกการแก้ไข";
@@ -490,7 +536,7 @@
   function clearFormErrors() {
     el.formErrors.hidden = true;
     el.formErrors.textContent = "";
-    [["errTitle", "fTitle"], ["errSubject", "fSubject"], ["errUrl", "fUrl"], ["errGrades", null]]
+    [["errTitle", "fTitle"], ["errSubject", "fSubject"], ["errUrl", "fUrl"], ["errGrades", null], ["errCover", "fCover"]]
       .forEach(function (pair) {
         el[pair[0]].hidden = true;
         el[pair[0]].textContent = "";
@@ -514,6 +560,7 @@
     if (!g.url) { setFieldError("errUrl", "fUrl", "กรุณาวางลิงก์เกม"); problems.push("ลิงก์"); firstBad = firstBad || el.fUrl; }
     else if (!isHttpsUrl(g.url)) { setFieldError("errUrl", "fUrl", "ลิงก์ต้องเป็น https:// (เพื่อความปลอดภัย)"); problems.push("ลิงก์"); firstBad = firstBad || el.fUrl; }
     if (g.grades.length === 0) { setFieldError("errGrades", null, "เลือกระดับชั้นอย่างน้อย 1 ชั้น"); problems.push("ระดับชั้น"); firstBad = firstBad || el.fGradeCustom; }
+    if (g.cover && !isHttpsUrl(g.cover)) { setFieldError("errCover", "fCover", "รูปปกต้องเป็นลิงก์ https://"); problems.push("รูปปก"); firstBad = firstBad || el.fCover; }
     if (problems.length) {
       el.formErrors.textContent = "กรุณาแก้ไข: " + problems.join(", ");
       el.formErrors.hidden = false;
@@ -528,13 +575,16 @@
     if (bad) { bad.focus(); return; }
     const idx = Number(el.editIndex.value);
     if (idx >= 0) {
-      // แก้ไข: คง id เดิมไว้เสมอ (ลิงก์แชร์อ้างจาก id)
+      // แก้ไข: คง id/added/tags เดิมไว้ (ลิงก์แชร์อ้างจาก id, added ใช้เรียง "ใหม่ล่าสุด")
       g.id = games[idx].id || makeId(g.title, otherIds(idx));
+      if (games[idx].added) g.added = games[idx].added;
+      if (games[idx].tags) g.tags = games[idx].tags;
       games[idx] = g;
       changes.edited++;
     } else {
-      // เพิ่มใหม่: สร้าง id ไม่ซ้ำจากชื่อ
+      // เพิ่มใหม่: สร้าง id ไม่ซ้ำจากชื่อ + บันทึกวันที่เพิ่ม
       g.id = makeId(g.title, games.map(function (x) { return x.id; }));
+      g.added = todayISO();
       games.push(g);
       changes.added++;
     }

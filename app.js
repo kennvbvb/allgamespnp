@@ -39,8 +39,8 @@
     return null;
   }
 
-  // สถานะตัวกรอง (null = ทั้งหมด)
-  const state = { subject: null, grade: null, search: "" };
+  // สถานะตัวกรอง (null = ทั้งหมด) + การจัดเรียง ("" = ตามลำดับในไฟล์)
+  const state = { subject: null, grade: null, search: "", sort: "" };
 
   // ---------- DOM ----------
   const el = {
@@ -48,6 +48,7 @@
     subjectChips: document.getElementById("subjectChips"),
     gradeChips: document.getElementById("gradeChips"),
     search: document.getElementById("searchInput"),
+    sortSelect: document.getElementById("sortSelect"),
     resultCount: document.getElementById("resultCount"),
     clearFilters: document.getElementById("clearFilters"),
     emptyState: document.getElementById("emptyState"),
@@ -129,13 +130,15 @@
     });
   }
 
-  // ---------- Sync ตัวกรอง/ค้นหา กับ URL (refresh/แชร์ผลลัพธ์ได้) ----------
+  // ---------- Sync ตัวกรอง/ค้นหา/เรียง กับ URL (refresh/แชร์ผลลัพธ์ได้) ----------
   function readFiltersFromUrl() {
     const p = new URLSearchParams(location.search);
     state.subject = p.get("subject") || null;
     state.grade = p.get("grade") || null;
     state.search = p.get("q") || "";
+    state.sort = p.get("sort") || "";
     if (el.search) el.search.value = state.search;
+    if (el.sortSelect) el.sortSelect.value = state.sort;
   }
 
   function writeFiltersToUrl() {
@@ -143,23 +146,39 @@
     if (state.subject) p.set("subject", state.subject);
     if (state.grade) p.set("grade", state.grade);
     if (state.search.trim()) p.set("q", state.search.trim());
+    if (state.sort) p.set("sort", state.sort);
     const qs = p.toString();
     const url = location.pathname + (qs ? "?" + qs : "") + location.hash;
     if (history.replaceState) history.replaceState(history.state, "", url);
   }
 
-  // ---------- Filter ----------
+  // ---------- Filter + Sort ----------
   function filteredGames() {
     const q = state.search.trim().toLowerCase();
-    return games.filter(function (g) {
+    const list = games.filter(function (g) {
       if (state.subject && g.subject !== state.subject) return false;
       if (state.grade && g.grades.indexOf(state.grade) === -1) return false;
       if (q) {
-        const hay = (g.title + " " + (g.description || "") + " " + g.subject).toLowerCase();
+        const hay = (g.title + " " + (g.description || "") + " " + g.subject +
+          " " + (g.topic || "") + " " + (g.tags ? g.tags.join(" ") : "")).toLowerCase();
         if (hay.indexOf(q) === -1) return false;
       }
       return true;
     });
+    return sortGames(list);
+  }
+
+  function sortGames(list) {
+    const arr = list.slice();
+    if (state.sort === "name") {
+      arr.sort(function (a, b) { return a.title.localeCompare(b.title, "th"); });
+    } else if (state.sort === "new") {
+      arr.sort(function (a, b) { return String(b.added || "").localeCompare(String(a.added || "")); });
+    } else if (state.sort === "recommended") {
+      const rank = function (g) { return g.badge === "แนะนำ" ? 0 : 1; };
+      arr.sort(function (a, b) { return rank(a) - rank(b); });
+    }
+    return arr; // "" = คงลำดับเดิมในไฟล์
   }
 
   // ---------- Render cards ----------
@@ -172,7 +191,9 @@
       card.type = "button";
       card.className = "game-card";
       card.style.setProperty("--card-color", g.color);
-      card.setAttribute("aria-label", "เปิดเกม " + g.title);
+      // accessible name รวมวิชา/ระดับชั้น เพื่อให้ screen reader ได้บริบท
+      card.setAttribute("aria-label",
+        "เปิดเกม " + g.title + " — " + (g.subject || "") + " " + g.grades.join(" "));
 
       const gradeTags = g.grades
         .map(function (gr) {
@@ -184,10 +205,28 @@
         ? '<p class="card-desc">' + escapeHtml(g.description) + "</p>"
         : "";
 
+      // รูปปก (ถ้ามีและเป็น https) ไม่งั้น emoji
+      const media = (g.cover && /^https:\/\//i.test(g.cover))
+        ? '<span class="card-media"><img src="' + escapeHtml(g.cover) + '" alt="" loading="lazy" /></span>'
+        : '<span class="card-emoji" aria-hidden="true">' + escapeHtml(g.emoji) + "</span>";
+
+      const badge = g.badge
+        ? '<span class="card-badge">' + escapeHtml(g.badge) + "</span>"
+        : "";
+
+      const metaBits = [];
+      if (g.minutes) metaBits.push("⏱ " + escapeHtml(String(g.minutes)) + " นาที");
+      if (g.mode) metaBits.push("👥 " + escapeHtml(g.mode));
+      const metaHtml = metaBits.length
+        ? '<div class="card-meta">' + metaBits.map(function (b) { return "<span>" + b + "</span>"; }).join("") + "</div>"
+        : "";
+
       card.innerHTML =
-        '<span class="card-emoji" aria-hidden="true">' + escapeHtml(g.emoji) + "</span>" +
+        badge +
+        media +
         '<h3 class="card-title">' + escapeHtml(g.title) + "</h3>" +
         descHtml +
+        metaHtml +
         '<div class="card-tags">' +
           '<span class="tag tag-subject">' + escapeHtml(g.subject || "") + "</span>" +
           gradeTags +
@@ -368,6 +407,14 @@
     render();
     writeFiltersToUrl();
   });
+
+  if (el.sortSelect) {
+    el.sortSelect.addEventListener("change", function () {
+      state.sort = el.sortSelect.value;
+      render();
+      writeFiltersToUrl();
+    });
+  }
 
   el.clearFilters.addEventListener("click", function () {
     state.subject = null;

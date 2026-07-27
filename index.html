@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-src https:; connect-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; frame-src https:; connect-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'" />
   <meta name="description" content="รวมเกมการศึกษาแบ่งตามวิชาและระดับชั้น เปิดเล่นได้จากมือถือ" />
   <title>รวมเกมการศึกษา</title>
   <link rel="stylesheet" href="style.css" />
@@ -42,7 +42,16 @@
 
     <div class="result-bar">
       <span id="resultCount" role="status" aria-live="polite"></span>
-      <button type="button" id="clearFilters" class="link-btn" hidden>ล้างตัวกรอง</button>
+      <div class="result-tools">
+        <label class="sort-label" for="sortSelect">เรียงโดย</label>
+        <select id="sortSelect" class="sort-select">
+          <option value="">ค่าเริ่มต้น</option>
+          <option value="recommended">⭐ แนะนำ</option>
+          <option value="new">🆕 ใหม่ล่าสุด</option>
+          <option value="name">ก–ฮ ชื่อเกม</option>
+        </select>
+        <button type="button" id="clearFilters" class="link-btn" hidden>ล้างตัวกรอง</button>
+      </div>
     </div>
 
     <section class="game-grid" id="gameGrid" tabindex="-1"></section>
