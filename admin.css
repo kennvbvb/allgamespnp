@@ -181,6 +181,32 @@
   background: var(--surface);
 }
 
+.admin-list-item.dragging {
+  opacity: 0.9;
+  box-shadow: var(--shadow-lg, 0 12px 40px rgba(0, 0, 0, 0.25));
+  background: color-mix(in srgb, var(--item-color, var(--primary)) 8%, var(--surface));
+}
+
+body.is-reordering { user-select: none; }
+body.is-reordering .admin-list-item:not(.dragging) { transition: transform 0.12s ease; }
+
+.drag-handle {
+  flex-shrink: 0;
+  width: var(--touch-min, 44px);
+  height: var(--touch-min, 44px);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: grab;
+  touch-action: none; /* ไม่ให้หน้าเลื่อนตอนลากบนจอสัมผัส */
+}
+.drag-handle:active { cursor: grabbing; }
+.drag-handle:disabled { opacity: 0.3; cursor: not-allowed; }
+.drag-handle:hover:not(:disabled) { background: var(--bg); }
+
 .li-emoji { font-size: 1.5rem; flex-shrink: 0; }
 .li-main { flex: 1; min-width: 0; }
 .li-title { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

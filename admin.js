@@ -391,12 +391,17 @@
       shown++;
       const li = document.createElement("li");
       li.className = "admin-list-item";
+      li.dataset.index = String(i);
       li.style.setProperty("--item-color", g.color || "#4f8ef7");
       const t = escapeHtml(g.title);
       // ปิดปุ่มเลื่อนเมื่อกำลังกรอง (ลำดับจริงสับสน) หรืออยู่หัว/ท้ายรายการ
       const upDis = (filtering || i === 0) ? " disabled" : "";
       const downDis = (filtering || i === games.length - 1) ? " disabled" : "";
+      // จับลากเรียงลำดับ (เมาส์/สัมผัส) — ปิดเมื่อกำลังกรอง เพราะลำดับจริงไม่ตรงกับที่เห็น
+      const dragDis = filtering ? " disabled" : "";
+      const handleTitle = filtering ? "ล้างตัวกรองก่อนจึงจะลากเรียงได้" : "ลากเพื่อจัดลำดับ (หรือใช้ปุ่ม ↑↓)";
       li.innerHTML =
+        '<button type="button" class="drag-handle" data-act="drag" aria-label="ลากเพื่อจัดลำดับ ' + t + '" title="' + escapeHtml(handleTitle) + '"' + dragDis + ">⠿</button>" +
         '<span class="li-emoji" aria-hidden="true">' + escapeHtml(g.emoji || "🎮") + "</span>" +
         '<div class="li-main">' +
           '<div class="li-title">' + t + "</div>" +
@@ -409,9 +414,13 @@
           '<button type="button" class="mini" data-act="edit" aria-label="แก้ไข ' + t + '">✏️</button>' +
           '<button type="button" class="mini danger" data-act="del" aria-label="ลบ ' + t + '">🗑️</button>' +
         "</div>";
-      li.querySelectorAll("button[data-act]").forEach(function (btn) {
+      li.querySelectorAll("button[data-act]:not(.drag-handle)").forEach(function (btn) {
         btn.addEventListener("click", function () { itemAction(btn.dataset.act, i); });
       });
+      const handle = li.querySelector(".drag-handle");
+      if (handle && !filtering) {
+        handle.addEventListener("pointerdown", function (e) { startDrag(e, li); });
+      }
       el.list.appendChild(li);
     });
     el.listCount.textContent = String(games.length);
@@ -419,6 +428,59 @@
     refreshSubjectList();
     refreshTagList();
     refreshListSubjectFilter();
+  }
+
+  // ---------- ลากจัดลำดับ (Pointer events — รองรับทั้งเมาส์และสัมผัส) ----------
+  // ปุ่ม ↑↓ ยังใช้ได้ (เป็นทางเลือกคีย์บอร์ด/แตะทีละขั้นที่เข้าถึงง่าย)
+  let drag = null;
+  function startDrag(e, li) {
+    if (e.button != null && e.button !== 0) return; // เมาส์: ปุ่มซ้ายเท่านั้น
+    e.preventDefault();
+    li.classList.add("dragging");
+    document.body.classList.add("is-reordering");
+    drag = { li: li, pointerId: e.pointerId };
+    try { li.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+    // ฟังที่ document เพื่อให้ทำงานแม้ pointer capture ไม่ติด (เคอร์เซอร์อาจอยู่เหนือรายการอื่น)
+    document.addEventListener("pointermove", onDragMove);
+    document.addEventListener("pointerup", endDrag);
+    document.addEventListener("pointercancel", endDrag);
+  }
+
+  function onDragMove(e) {
+    if (!drag) return;
+    const y = e.clientY;
+    const others = Array.prototype.slice.call(
+      el.list.querySelectorAll(".admin-list-item:not(.dragging)"));
+    let before = null;
+    for (let k = 0; k < others.length; k++) {
+      const rect = others[k].getBoundingClientRect();
+      if (y < rect.top + rect.height / 2) { before = others[k]; break; }
+    }
+    if (before) el.list.insertBefore(drag.li, before);
+    else el.list.appendChild(drag.li);
+  }
+
+  function endDrag() {
+    if (!drag) return;
+    const li = drag.li;
+    document.removeEventListener("pointermove", onDragMove);
+    document.removeEventListener("pointerup", endDrag);
+    document.removeEventListener("pointercancel", endDrag);
+    try { li.releasePointerCapture(drag.pointerId); } catch (err) { /* ignore */ }
+    li.classList.remove("dragging");
+    document.body.classList.remove("is-reordering");
+    drag = null;
+    // อ่านลำดับใหม่จาก DOM (data-index = ตำแหน่งเดิมของเกม) → จัดเรียง games ใหม่
+    const order = Array.prototype.map.call(el.list.children, function (n) { return Number(n.dataset.index); });
+    const reordered = order.map(function (idx) { return games[idx]; });
+    const changed = reordered.some(function (g, k) { return g !== games[k]; });
+    if (changed) {
+      games = reordered;
+      changes.reordered = true;
+      setDirty(true);
+      updateChangeSummary();
+    }
+    renderList();
   }
 
   function refreshListSubjectFilter() {
