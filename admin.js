@@ -33,7 +33,9 @@
   const $ = function (id) { return document.getElementById(id); };
   const el = {
     owner: $("cfgOwner"), repo: $("cfgRepo"), branch: $("cfgBranch"), path: $("cfgPath"),
-    token: $("cfgToken"), remember: $("cfgRemember"),
+    token: $("cfgToken"), remember: $("cfgRemember"), worker: $("cfgWorker"),
+    authBox: $("authBox"), tokenBox: $("tokenBox"), authState: $("authState"),
+    btnLogin: $("btnLogin"), btnLogout: $("btnLogout"),
     btnTest: $("btnTest"), btnForget: $("btnForget"), connStatus: $("connStatus"),
     form: $("gameForm"), formHeading: $("formHeading"), editIndex: $("editIndex"),
     fTitle: $("fTitle"), fDesc: $("fDesc"), fSubject: $("fSubject"), fUrl: $("fUrl"),
@@ -215,6 +217,7 @@
       if (cfg.repo) el.repo.value = cfg.repo;
       if (cfg.branch) el.branch.value = cfg.branch;
       if (cfg.path) el.path.value = cfg.path;
+      if (cfg.worker && el.worker) el.worker.value = cfg.worker;
     } catch (e) { /* ignore */ }
     const t = sessionStorage.getItem(SS_TOKEN);
     if (t) { el.token.value = t; el.remember.checked = true; }
@@ -224,6 +227,7 @@
     const cfg = {
       owner: el.owner.value.trim(), repo: el.repo.value.trim(),
       branch: el.branch.value.trim(), path: el.path.value.trim(),
+      worker: el.worker ? el.worker.value.trim() : "",
     };
     localStorage.setItem(LS_CFG, JSON.stringify(cfg));
     if (el.remember.checked && el.token.value.trim()) {
@@ -244,6 +248,97 @@
     };
   }
 
+  // ---------- โหมดล็อกอินผ่าน Worker (ถ้าตั้งค่าไว้) ----------
+  // ตั้ง "ที่อยู่ระบบล็อกอิน" แล้วหน้านี้จะไม่ต้องใช้ token เลย — worker เป็นคน
+  // คุยกับ GitHub ให้ (token อยู่ใน cookie HttpOnly ที่ JS อ่านไม่ได้)
+  let authLogin = null; // ชื่อผู้ใช้ที่ล็อกอินอยู่ (null = ยังไม่ล็อกอิน)
+
+  function workerBase() {
+    const u = (el.worker && el.worker.value.trim()) || "";
+    return u.replace(/\/+$/, ""); // ตัด / ท้ายออก
+  }
+  function usingWorker() { return !!workerBase(); }
+
+  // พร้อมคุยกับ GitHub แล้วหรือยัง — คืนข้อความบอกเหตุถ้ายังไม่พร้อม (null = พร้อม)
+  function notReadyMsg() {
+    if (usingWorker()) {
+      return authLogin ? null : "ยังไม่ได้ล็อกอิน — กด “เข้าสู่ระบบด้วย GitHub” ในขั้นที่ 1";
+    }
+    return el.token.value.trim() ? null : "ยังไม่ได้ใส่ token (ดูขั้นที่ 1)";
+  }
+
+  function wfetch(path, opts) {
+    opts = opts || {};
+    opts.credentials = "include"; // ส่ง cookie session ไปด้วย
+    return fetch(workerBase() + path, opts);
+  }
+
+  function setAuthUi() {
+    const on = usingWorker();
+    if (el.authBox) el.authBox.hidden = !on;
+    if (el.tokenBox) el.tokenBox.hidden = on;
+    if (!on) return;
+    const logged = !!authLogin;
+    if (el.btnLogin) el.btnLogin.hidden = logged;
+    if (el.btnLogout) el.btnLogout.hidden = !logged;
+    if (el.authState) {
+      el.authState.textContent = logged
+        ? "✅ ล็อกอินเป็น " + authLogin + " — บันทึกขึ้นเว็บได้เลย ไม่ต้องใช้ token"
+        : "ยังไม่ได้ล็อกอิน — กดปุ่มด้านล่างเพื่อเข้าสู่ระบบด้วยบัญชี GitHub";
+      el.authState.className = "auth-state" + (logged ? " is-on" : "");
+    }
+  }
+
+  function checkAuth() {
+    if (!usingWorker()) { authLogin = null; setAuthUi(); return Promise.resolve(false); }
+    return wfetch("/api/me")
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        authLogin = j && j.login ? j.login : null;
+        setAuthUi();
+        return !!authLogin;
+      })
+      .catch(function () { authLogin = null; setAuthUi(); return false; });
+  }
+
+  if (el.btnLogin) {
+    el.btnLogin.addEventListener("click", function () {
+      if (!usingWorker()) return;
+      saveCfg();
+      location.href = workerBase() + "/auth/login";
+    });
+  }
+  if (el.btnLogout) {
+    el.btnLogout.addEventListener("click", function () {
+      wfetch("/auth/logout", { method: "POST" }).then(function () {
+        authLogin = null;
+        setAuthUi();
+        setStatus(el.connStatus, "ออกจากระบบแล้ว", "ok");
+      });
+    });
+  }
+  if (el.worker) {
+    el.worker.addEventListener("change", function () { saveCfg(); checkAuth(); });
+  }
+
+  // แจ้งผลหลังกลับมาจากหน้าล็อกอิน GitHub
+  function reportLoginResult() {
+    const p = new URLSearchParams(location.search);
+    const r = p.get("login");
+    if (!r) return;
+    if (r === "ok") setStatus(el.connStatus, "✅ ล็อกอินสำเร็จ", "ok");
+    else {
+      const why = {
+        notallowed: "บัญชีนี้ไม่อยู่ในรายชื่อที่อนุญาต (ตั้งใน ALLOWED_LOGINS ของ worker)",
+        token: "แลกรหัสกับ GitHub ไม่สำเร็จ — ตรวจ GITHUB_CLIENT_SECRET",
+        state: "คำขอหมดอายุหรือไม่ถูกต้อง ลองกดล็อกอินใหม่",
+      }[p.get("reason")] || "ไม่ทราบสาเหตุ";
+      setStatus(el.connStatus, "❌ ล็อกอินไม่สำเร็จ — " + why, "err");
+    }
+    // ลบพารามิเตอร์ออกจาก URL ให้สะอาด
+    if (history.replaceState) history.replaceState(null, "", location.pathname);
+  }
+
   // ---------- GitHub API ----------
   function apiUrl(c, path) {
     return "https://api.github.com/repos/" + encodeURIComponent(c.owner) +
@@ -259,7 +354,18 @@
   }
 
   // ดึงไฟล์ปัจจุบัน → คืน { sha, text }
+  // (โหมด worker: เรียกผ่าน worker ไม่ต้องมี token ในเบราว์เซอร์)
   function ghGetFile(c, path) {
+    if (usingWorker()) {
+      return wfetch("/api/file?path=" + encodeURIComponent(path) + "&ref=" + encodeURIComponent(c.branch))
+        .then(function (r) {
+          return r.json().catch(function () { return {}; }).then(function (j) {
+            if (r.status === 401) throw new Error("ยังไม่ได้ล็อกอิน — กด “เข้าสู่ระบบด้วย GitHub” ก่อน");
+            if (!r.ok) throw new Error(j.error || "โหลดไฟล์ไม่สำเร็จ (" + r.status + ")");
+            return { sha: j.sha, text: j.text };
+          });
+        });
+    }
     const url = apiUrl(c, path) + "?ref=" + encodeURIComponent(c.branch);
     return fetch(url, { headers: ghHeaders(c), cache: "no-store" }).then(function (r) {
       if (r.status === 404) return { sha: null, text: null };
@@ -274,6 +380,19 @@
 
   // เขียนไฟล์ (create/update)
   function ghPutFile(c, path, text, sha, message) {
+    if (usingWorker()) {
+      return wfetch("/api/commit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: path, text: text, sha: sha || null, message: message, branch: c.branch }),
+      }).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (j) {
+          if (r.status === 401) throw new Error("ยังไม่ได้ล็อกอิน — กด “เข้าสู่ระบบด้วย GitHub” ก่อน");
+          if (!r.ok) throw new Error(j.error || "commit ไม่สำเร็จ (" + r.status + ")");
+          return j;
+        });
+      });
+    }
     const body = {
       message: message,
       content: utf8ToB64(text),
@@ -899,7 +1018,8 @@
   // ---------- Connection test ----------
   el.btnTest.addEventListener("click", function () {
     const c = cfg();
-    if (!c.token) { setStatus(el.connStatus, "ยังไม่ได้ใส่ token", "err"); return; }
+    const notReady = notReadyMsg();
+    if (notReady) { setStatus(el.connStatus, "❌ " + notReady, "err"); return; }
     saveCfg();
     setStatus(el.connStatus, "กำลังทดสอบ…", "");
     ghGetFile(c, c.path).then(function (res) {
@@ -977,7 +1097,8 @@
 
   el.btnReload.addEventListener("click", function () {
     const c = cfg();
-    if (!c.token) { setStatus(el.commitStatus, "ใส่ token แล้วกดทดสอบก่อน", "err"); return; }
+    const notReady = notReadyMsg();
+    if (notReady) { setStatus(el.commitStatus, "❌ " + notReady, "err"); return; }
     saveCfg();
     setStatus(el.commitStatus, "กำลังโหลดข้อมูลล่าสุด…", "");
     loadGamesFromGitHub(c).catch(function (err) {
@@ -995,7 +1116,8 @@
   // ---------- Commit ----------
   function commitGames() {
     const c = cfg();
-    if (!c.token) { setStatus(el.commitStatus, "❌ ยังไม่ได้ใส่ token (ดูขั้นที่ 1)", "err"); return; }
+    const notReady = notReadyMsg();
+    if (notReady) { setStatus(el.commitStatus, "❌ " + notReady, "err"); return; }
     if (games.length === 0 && !confirm("รายการเกมว่าง จะบันทึกไฟล์ว่างจริงหรือ?")) return;
     saveCfg();
     ensureIds(games);
@@ -1154,7 +1276,8 @@
 
   el.btnSaveAnnounce.addEventListener("click", function () {
     const c = cfg();
-    if (!c.token) { setStatus(el.annStatus, "❌ ยังไม่ได้ใส่ token (ดูขั้นที่ 1)", "err"); return; }
+    const notReady = notReadyMsg();
+    if (notReady) { setStatus(el.annStatus, "❌ " + notReady, "err"); return; }
     const ann = readAnnouncementForm();
     if (ann.enabled && !ann.message && !ann.title) {
       setStatus(el.annStatus, "เปิดประกาศแล้วแต่ยังไม่มีข้อความ กรุณาใส่หัวข้อหรือเนื้อหา", "err");
@@ -1191,7 +1314,8 @@
 
   el.btnReloadAnnounce.addEventListener("click", function () {
     const c = cfg();
-    if (!c.token) { setStatus(el.annStatus, "ใส่ token แล้วกดทดสอบก่อน", "err"); return; }
+    const notReady = notReadyMsg();
+    if (notReady) { setStatus(el.annStatus, "❌ " + notReady, "err"); return; }
     saveCfg();
     setStatus(el.annStatus, "กำลังโหลดประกาศล่าสุด…", "");
     loadAnnouncementFromGitHub(c).then(function (ok) {
@@ -1226,8 +1350,8 @@
   el.listNote.textContent =
     games.length + " เกม (จากข้อมูลที่โหลดมากับหน้านี้)";
 
-  // ถ้าเครื่องนี้จำ token ไว้ ให้ดึงข้อมูลล่าสุดอัตโนมัติ (ตั้ง baseSha กันเขียนทับ)
-  if (el.token.value.trim()) {
+  // ดึงข้อมูลล่าสุดอัตโนมัติ (ตั้ง baseSha กันเขียนทับ)
+  function autoLoadLatest() {
     const c = cfg();
     setStatus(el.commitStatus, "กำลังดึงข้อมูลล่าสุดจาก GitHub…", "");
     loadGamesFromGitHub(c, { silent: true, force: true }).then(function () {
@@ -1236,5 +1360,15 @@
     }).catch(function () {
       setStatus(el.commitStatus, "โหลดอัตโนมัติไม่สำเร็จ ลองกด “ทดสอบการเชื่อมต่อ”", "warn");
     });
+  }
+
+  setAuthUi();
+  reportLoginResult();
+  if (usingWorker()) {
+    // โหมดล็อกอิน: ถ้า session ยังอยู่ ดึงข้อมูลล่าสุดให้เลย
+    checkAuth().then(function (ok) { if (ok) autoLoadLatest(); });
+  } else if (el.token.value.trim()) {
+    // โหมด token: ถ้าแท็บนี้จำ token ไว้
+    autoLoadLatest();
   }
 })();

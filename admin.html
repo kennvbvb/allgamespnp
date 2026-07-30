@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.github.com; frame-src 'none'; base-uri 'self'; object-src 'none'; form-action 'self'" />
+  <!-- connect-src เปิดให้ *.workers.dev เพื่อคุยกับระบบล็อกอิน (Cloudflare Worker)
+       ถ้าอยากเข้มขึ้น เปลี่ยนเป็น URL worker ของตัวเองตรงๆ ได้ เช่น
+       https://allgamespnp-admin.ชื่อบัญชี.workers.dev -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.github.com https://*.workers.dev; frame-src 'none'; base-uri 'self'; object-src 'none'; form-action 'self'" />
   <meta name="robots" content="noindex" />
   <title>จัดการเกม (สำหรับครู) · รวมเกมการศึกษา</title>
   <link rel="stylesheet" href="style.css" />
@@ -24,6 +27,18 @@
     <!-- ขั้นที่ 1: เชื่อมต่อ GitHub -->
     <section class="admin-card">
       <h2 class="admin-h2">1. เชื่อมต่อ GitHub <span class="step-hint">(ทำครั้งเดียว เครื่องนี้จำให้)</span></h2>
+
+      <!-- โหมดล็อกอิน (ใช้เมื่อตั้งค่า worker แล้ว) — ไม่ต้องวาง token เอง -->
+      <div id="authBox" hidden>
+        <p class="auth-state" id="authState">กำลังตรวจสอบสถานะการล็อกอิน…</p>
+        <div class="btn-row">
+          <button type="button" id="btnLogin" class="btn btn-primary" hidden>🔐 เข้าสู่ระบบด้วย GitHub</button>
+          <button type="button" id="btnLogout" class="btn btn-ghost" hidden>ออกจากระบบ</button>
+        </div>
+      </div>
+
+      <!-- โหมด token (ค่าเริ่มต้น ใช้ได้เหมือนเดิมถ้าไม่ได้ตั้ง worker) -->
+      <div id="tokenBox">
       <details class="help">
         <summary>วิธีสร้าง Token (กดดู)</summary>
         <ol>
@@ -52,10 +67,16 @@
         <button type="button" id="btnTest" class="btn btn-primary">🔌 ทดสอบการเชื่อมต่อ</button>
         <button type="button" id="btnForget" class="btn btn-ghost">🗑️ ลืม token เครื่องนี้</button>
       </div>
+      </div><!-- /tokenBox -->
+
       <p class="status" id="connStatus"></p>
 
       <details class="advanced">
         <summary>⚙️ ตั้งค่าขั้นสูง (ปกติไม่ต้องแตะ)</summary>
+        <label class="field">
+          <span>ที่อยู่ระบบล็อกอิน (Cloudflare Worker) — ใส่แล้วจะไม่ต้องวาง token เอง</span>
+          <input type="url" id="cfgWorker" placeholder="https://allgamespnp-admin.xxx.workers.dev" />
+        </label>
         <div class="field-grid">
           <label class="field">
             <span>เจ้าของ repo (owner)</span>

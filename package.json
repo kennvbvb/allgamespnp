@@ -5,6 +5,7 @@
   "description": "รวมเกมการศึกษา (static site) — smoke tests",
   "scripts": {
     "test": "playwright test",
+    "test:worker": "node worker/test.mjs",
     "test:links": "node scripts/check-links.mjs"
   },
   "devDependencies": {

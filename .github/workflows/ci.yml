@@ -29,6 +29,9 @@ jobs:
       - name: Install Chromium for Playwright
         run: npx playwright install --with-deps chromium
 
+      - name: Run worker auth tests (session/CSRF/path allowlist)
+        run: npm run test:worker
+
       - name: Run Playwright tests (smoke + a11y)
         run: npx playwright test
 

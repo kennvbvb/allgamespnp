@@ -1,0 +1,16 @@
+name = "allgamespnp-admin"
+main = "index.js"
+compatibility_date = "2026-01-01"
+
+# ค่าที่ไม่เป็นความลับ ตั้งได้ตรงนี้เลย
+[vars]
+SITE_ORIGIN = "https://kennvbvb.github.io"
+SITE_ADMIN_URL = "https://kennvbvb.github.io/allgamespnp/admin.html"
+REPO_OWNER = "kennvbvb"
+REPO_NAME = "allgamespnp"
+ALLOWED_LOGINS = "kennvbvb"
+
+# ค่าที่เป็นความลับ อย่าใส่ในไฟล์นี้ — ตั้งด้วยคำสั่ง (ดู README.md):
+#   npx wrangler secret put GITHUB_CLIENT_ID
+#   npx wrangler secret put GITHUB_CLIENT_SECRET
+#   npx wrangler secret put SESSION_SECRET

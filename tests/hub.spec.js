@@ -60,9 +60,14 @@ test.describe("หน้ารวมเกม (student hub)", () => {
     await page.keyboard.press("Escape");
     await expect(page.locator("#gameModal")).toBeHidden();
     // เปิดใหม่แล้วกด Back ปิด (ไม่หลุดออกจากเว็บ)
+    // โหลดหน้าใหม่ก่อน เพื่อให้ history เริ่มสะอาด — การปิดด้วย Escape ข้างบนใช้
+    // history.back() แบบ async ถ้าเปิด/ปิดซ้อนกันเร็วๆ ลำดับ history จะสลับกันได้
+    await page.goto("/index.html");
     await page.locator(".game-card").first().click();
     await expect(page.locator("#gameModal")).toBeVisible();
-    await page.goBack();
+    // ใช้ history.back() ในหน้าเลย ไม่ใช้ page.goBack() เพราะการย้อนข้ามการเปลี่ยน
+    // แค่ hash ไม่เกิด event "load" ที่ page.goBack() รออยู่ → timeout สุ่มๆ
+    await page.evaluate(() => history.back());
     await expect(page.locator("#gameModal")).toBeHidden();
     expect(page.url()).toContain("/index.html");
   });

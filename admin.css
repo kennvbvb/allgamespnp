@@ -181,6 +181,22 @@
   background: var(--surface);
 }
 
+/* ---------- โหมดล็อกอิน (worker) ---------- */
+.auth-state {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.auth-state.is-on {
+  background: color-mix(in srgb, #1a7f4b 12%, var(--surface));
+  border-color: color-mix(in srgb, #1a7f4b 35%, var(--border));
+}
+
 /* ---------- เลือกหลายเกม (bulk) ---------- */
 .select-tools {
   display: flex;
