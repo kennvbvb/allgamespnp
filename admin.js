@@ -58,7 +58,17 @@
     listSearch: $("listSearch"), listSubjectFilter: $("listSubjectFilter"), listEmpty: $("listEmpty"),
     snackbar: $("snackbar"), snackbarText: $("snackbarText"), snackbarAction: $("snackbarAction"),
     changeSummary: $("changeSummary"),
+    selectAllVisible: $("selectAllVisible"), linkStatusNote: $("linkStatusNote"),
+    bulkBar: $("bulkBar"), bulkCount: $("bulkCount"), bulkClear: $("bulkClear"),
+    bulkTagInput: $("bulkTagInput"), bulkTagAdd: $("bulkTagAdd"), bulkTagRemove: $("bulkTagRemove"),
+    bulkSubject: $("bulkSubject"), bulkMode: $("bulkMode"), bulkMinutes: $("bulkMinutes"),
+    bulkBadge: $("bulkBadge"), bulkApply: $("bulkApply"), bulkDelete: $("bulkDelete"),
   };
+
+  // id เกมที่ติ๊กเลือกไว้ (ใช้ id ไม่ใช่ index เพราะลำดับเปลี่ยนได้จากการลาก/ลบ)
+  const selected = new Set();
+  // ผลตรวจลิงก์จาก link-status.json (ตรวจโดย GitHub Actions รายสัปดาห์)
+  let linkStatus = null;
 
   // สถานะตัวกรองรายการ + ตัวนับการเปลี่ยนแปลง (สำหรับสรุปก่อนเผยแพร่)
   const listState = { search: "", subject: "" };
@@ -400,11 +410,19 @@
       // จับลากเรียงลำดับ (เมาส์/สัมผัส) — ปิดเมื่อกำลังกรอง เพราะลำดับจริงไม่ตรงกับที่เห็น
       const dragDis = filtering ? " disabled" : "";
       const handleTitle = filtering ? "ล้างตัวกรองก่อนจึงจะลากเรียงได้" : "ลากเพื่อจัดลำดับ (หรือใช้ปุ่ม ↑↓)";
+      // ⚠️ ถ้าผลตรวจล่าสุดบอกว่าลิงก์เกมนี้เปิดไม่ได้
+      const bad = linkStatus && linkStatus.games && linkStatus.games[g.id] && linkStatus.games[g.id].ok === false;
+      const warn = bad
+        ? ' <span class="li-warn" title="' + escapeHtml("ลิงก์เปิดไม่ได้: " + (linkStatus.games[g.id].status || "ไม่ทราบสาเหตุ")) + '">⚠️ ลิงก์เสีย</span>'
+        : "";
       li.innerHTML =
+        '<label class="li-check"><input type="checkbox" data-act="select"' +
+          (selected.has(g.id) ? " checked" : "") +
+          ' aria-label="เลือก ' + t + '" /></label>' +
         '<button type="button" class="drag-handle" data-act="drag" aria-label="ลากเพื่อจัดลำดับ ' + t + '" title="' + escapeHtml(handleTitle) + '"' + dragDis + ">⠿</button>" +
         '<span class="li-emoji" aria-hidden="true">' + escapeHtml(g.emoji || "🎮") + "</span>" +
         '<div class="li-main">' +
-          '<div class="li-title">' + t + "</div>" +
+          '<div class="li-title">' + t + warn + "</div>" +
           '<div class="li-meta">' + escapeHtml(g.subject || "") +
             " · " + escapeHtml((g.grades || []).join(", ")) + "</div>" +
         "</div>" +
@@ -417,6 +435,15 @@
       li.querySelectorAll("button[data-act]:not(.drag-handle)").forEach(function (btn) {
         btn.addEventListener("click", function () { itemAction(btn.dataset.act, i); });
       });
+      const cb = li.querySelector('input[data-act="select"]');
+      if (cb) {
+        cb.addEventListener("change", function () {
+          if (cb.checked) selected.add(g.id); else selected.delete(g.id);
+          li.classList.toggle("is-selected", cb.checked);
+          updateBulkBar();
+        });
+        li.classList.toggle("is-selected", cb.checked);
+      }
       const handle = li.querySelector(".drag-handle");
       if (handle && !filtering) {
         handle.addEventListener("pointerdown", function (e) { startDrag(e, li); });
@@ -428,6 +455,180 @@
     refreshSubjectList();
     refreshTagList();
     refreshListSubjectFilter();
+    updateBulkBar();
+  }
+
+  // ---------- จัดการหลายเกมพร้อมกัน (bulk) ----------
+  // เก็บเป็น id เพื่อให้การเลือกไม่เพี้ยนเวลาลำดับเปลี่ยน
+  function visibleGames() {
+    return games.filter(matchesListFilter);
+  }
+
+  function updateBulkBar() {
+    // ลบ id ที่ไม่มีอยู่แล้ว (เช่นถูกลบไป) ออกจากรายการที่เลือก
+    const ids = {};
+    games.forEach(function (g) { ids[g.id] = 1; });
+    Array.from(selected).forEach(function (id) { if (!ids[id]) selected.delete(id); });
+
+    const n = selected.size;
+    if (el.bulkBar) el.bulkBar.hidden = n === 0;
+    if (el.bulkCount) el.bulkCount.textContent = "เลือกไว้ " + n + " เกม";
+    // ติ๊ก "เลือกทั้งหมดที่เห็น" ให้สะท้อนสถานะจริง
+    if (el.selectAllVisible) {
+      const vis = visibleGames();
+      const allOn = vis.length > 0 && vis.every(function (g) { return selected.has(g.id); });
+      el.selectAllVisible.checked = allOn;
+      el.selectAllVisible.indeterminate = !allOn && vis.some(function (g) { return selected.has(g.id); });
+    }
+  }
+
+  function selectedGames() {
+    return games.filter(function (g) { return selected.has(g.id); });
+  }
+
+  // แก้เกมที่เลือกทั้งหมดด้วยฟังก์ชันเดียว แล้วอัปเดตสถานะ/ตัวนับให้ครบ
+  function applyToSelected(fn) {
+    const list = selectedGames();
+    if (!list.length) return 0;
+    list.forEach(fn);
+    changes.edited += list.length;
+    renderList();
+    setDirty(true);
+    updateChangeSummary();
+    return list.length;
+  }
+
+  function parseTagInput() {
+    return el.bulkTagInput.value.split(",")
+      .map(function (s) { return s.trim(); })
+      .filter(Boolean);
+  }
+
+  if (el.selectAllVisible) {
+    el.selectAllVisible.addEventListener("change", function () {
+      const on = el.selectAllVisible.checked;
+      visibleGames().forEach(function (g) {
+        if (on) selected.add(g.id); else selected.delete(g.id);
+      });
+      renderList();
+      updateBulkBar();
+    });
+  }
+
+  if (el.bulkClear) {
+    el.bulkClear.addEventListener("click", function () {
+      selected.clear();
+      renderList();
+      updateBulkBar();
+    });
+  }
+
+  if (el.bulkTagAdd) {
+    el.bulkTagAdd.addEventListener("click", function () {
+      const tags = parseTagInput();
+      if (!tags.length) { setStatus(el.commitStatus, "พิมพ์แท็กที่จะติดก่อน", "err"); return; }
+      const n = applyToSelected(function (g) {
+        const cur = Array.isArray(g.tags) ? g.tags.slice() : [];
+        tags.forEach(function (t) { if (cur.indexOf(t) === -1) cur.push(t); });
+        g.tags = cur;
+      });
+      setStatus(el.commitStatus, "ติดแท็ก " + tags.join(", ") + " ให้ " + n + " เกมแล้ว — กด “บันทึกขึ้นเว็บ” เพื่อให้ถาวร", "warn");
+    });
+  }
+
+  if (el.bulkTagRemove) {
+    el.bulkTagRemove.addEventListener("click", function () {
+      const tags = parseTagInput();
+      if (!tags.length) { setStatus(el.commitStatus, "พิมพ์แท็กที่จะถอดก่อน", "err"); return; }
+      const n = applyToSelected(function (g) {
+        if (!Array.isArray(g.tags)) return;
+        g.tags = g.tags.filter(function (t) { return tags.indexOf(t) === -1; });
+        if (!g.tags.length) delete g.tags;
+      });
+      setStatus(el.commitStatus, "ถอดแท็ก " + tags.join(", ") + " จาก " + n + " เกมแล้ว", "warn");
+    });
+  }
+
+  if (el.bulkApply) {
+    el.bulkApply.addEventListener("click", function () {
+      const subject = el.bulkSubject.value.trim();
+      const mode = el.bulkMode.value;
+      const minutes = el.bulkMinutes.value.trim();
+      const badge = el.bulkBadge.value;
+      if (!subject && !mode && !minutes && !badge) {
+        setStatus(el.commitStatus, "เลือกค่าที่จะตั้งอย่างน้อย 1 อย่าง (วิชา/โหมด/นาที/ป้าย)", "err");
+        return;
+      }
+      if (minutes && (!isFinite(Number(minutes)) || Number(minutes) <= 0)) {
+        setStatus(el.commitStatus, "เวลาเล่นต้องเป็นตัวเลขบวก", "err");
+        return;
+      }
+      const done = [];
+      const n = applyToSelected(function (g) {
+        if (subject) g.subject = subject;
+        if (mode) g.mode = mode;
+        if (minutes) g.minutes = Number(minutes);
+        if (badge === "__clear__") delete g.badge;
+        else if (badge) g.badge = badge;
+      });
+      if (subject) done.push("วิชา " + subject);
+      if (mode) done.push("โหมด " + mode);
+      if (minutes) done.push(minutes + " นาที");
+      if (badge === "__clear__") done.push("ลบป้าย");
+      else if (badge) done.push("ป้าย " + badge);
+      // เคลียร์ค่าในแถบ กันเผลอกดซ้ำกับชุดอื่น
+      el.bulkSubject.value = ""; el.bulkMode.value = ""; el.bulkMinutes.value = ""; el.bulkBadge.value = "";
+      setStatus(el.commitStatus, "ตั้ง " + done.join(" · ") + " ให้ " + n + " เกมแล้ว — กด “บันทึกขึ้นเว็บ” เพื่อให้ถาวร", "warn");
+    });
+  }
+
+  if (el.bulkDelete) {
+    el.bulkDelete.addEventListener("click", function () {
+      const list = selectedGames();
+      if (!list.length) return;
+      // ลบหลายเกมพร้อมกัน — เก็บของเดิมไว้ให้เลิกทำได้ (คืนทั้งลำดับ)
+      const snapshot = deepCopy(games);
+      const ids = {};
+      list.forEach(function (g) { ids[g.id] = 1; });
+      games = games.filter(function (g) { return !ids[g.id]; });
+      changes.deleted += list.length;
+      selected.clear();
+      renderList();
+      setDirty(true);
+      updateChangeSummary();
+      showSnackbar("ลบ " + list.length + " เกมแล้ว", function () {
+        games = snapshot;
+        changes.deleted = Math.max(0, changes.deleted - list.length);
+        renderList();
+        updateChangeSummary();
+      });
+    });
+  }
+
+  // ---------- ผลตรวจลิงก์ (link-status.json สร้างโดย GitHub Actions) ----------
+  function loadLinkStatus() {
+    fetch("link-status.json", { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data || !data.games) return;
+        linkStatus = data;
+        const broken = Object.keys(data.games).filter(function (k) { return data.games[k].ok === false; });
+        if (el.linkStatusNote) {
+          el.linkStatusNote.hidden = false;
+          // ยังไม่เคยตรวจ (ไฟล์เริ่มต้น) — ต้องไม่บอกว่า "ลิงก์ปกติ" เพราะยังไม่ได้ตรวจจริง
+          if (!data.checkedAt) {
+            el.linkStatusNote.textContent = "⏳ ยังไม่เคยตรวจลิงก์ — ระบบตรวจอัตโนมัติทุกวันจันทร์";
+            el.linkStatusNote.className = "link-status-note";
+          } else {
+            el.linkStatusNote.textContent = broken.length
+              ? "⚠️ พบลิงก์เปิดไม่ได้ " + broken.length + " เกม (ตรวจเมื่อ " + data.checkedAt.slice(0, 10) + ")"
+              : "✅ ลิงก์ทุกเกมเปิดได้ (ตรวจเมื่อ " + data.checkedAt.slice(0, 10) + ")";
+            el.linkStatusNote.className = "link-status-note" + (broken.length ? " has-broken" : "");
+          }
+        }
+        renderList();
+      })
+      .catch(function () { /* ยังไม่มีไฟล์ = ยังไม่เคยตรวจ ไม่ต้องแจ้ง */ });
   }
 
   // ---------- ลากจัดลำดับ (Pointer events — รองรับทั้งเมาส์และสัมผัส) ----------
@@ -1021,6 +1222,7 @@
   setDirty(false);
   resetChanges();
   loadAnnouncementToForm(window.ANNOUNCEMENT || {});
+  loadLinkStatus();
   el.listNote.textContent =
     games.length + " เกม (จากข้อมูลที่โหลดมากับหน้านี้)";
 

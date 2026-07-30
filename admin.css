@@ -181,6 +181,103 @@
   background: var(--surface);
 }
 
+/* ---------- เลือกหลายเกม (bulk) ---------- */
+.select-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.select-all-line { margin: 0; }
+
+.link-status-note {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.link-status-note.has-broken { color: #b4400f; }
+
+.li-check {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-min, 44px);
+  min-height: var(--touch-min, 44px);
+  margin: 0;
+  cursor: pointer;
+}
+
+.li-check input { width: 20px; height: 20px; cursor: pointer; }
+
+.admin-list-item.is-selected {
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+}
+
+.li-warn {
+  margin-left: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #b4400f;
+  white-space: nowrap;
+}
+
+.bulk-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1.5px solid color-mix(in srgb, var(--primary) 35%, var(--border));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--primary) 6%, var(--surface));
+}
+
+.bulk-bar[hidden] { display: none; }
+
+.bulk-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.bulk-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.bulk-row input,
+.bulk-row select {
+  min-height: var(--touch-min, 44px);
+  padding: 8px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.92rem;
+}
+
+.bulk-row input[type="text"] { flex: 1 1 180px; min-width: 0; }
+.bulk-row input[type="number"] { width: 96px; }
+.bulk-row .btn { white-space: nowrap; } /* ไม่ให้ป้ายปุ่มหักบรรทัดเวลาแถบแคบ */
+
+.danger-text { color: #b4400f; }
+
+@media (prefers-color-scheme: dark) {
+  .link-status-note.has-broken,
+  .li-warn,
+  .danger-text { color: #ff9d76; }
+}
+
 .admin-list-item.dragging {
   opacity: 0.9;
   box-shadow: var(--shadow-lg, 0 12px 40px rgba(0, 0, 0, 0.25));

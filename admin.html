@@ -182,8 +182,49 @@
         </select>
       </div>
 
+      <div class="select-tools">
+        <label class="checkline select-all-line">
+          <input type="checkbox" id="selectAllVisible" />
+          <span>เลือกทั้งหมดที่เห็น</span>
+        </label>
+        <span class="link-status-note" id="linkStatusNote" hidden></span>
+      </div>
+
       <ul class="admin-list" id="gameList"></ul>
       <p class="list-empty" id="listEmpty" hidden>ไม่พบเกมที่ตรงกับการค้นหา</p>
+
+      <!-- แถบจัดการหลายเกมพร้อมกัน (โผล่เมื่อติ๊กเลือก) -->
+      <div class="bulk-bar" id="bulkBar" hidden>
+        <div class="bulk-head">
+          <strong id="bulkCount">เลือกไว้ 0 เกม</strong>
+          <button type="button" id="bulkClear" class="link-btn">ยกเลิกการเลือก</button>
+        </div>
+        <div class="bulk-row">
+          <input type="text" id="bulkTagInput" list="tagList" placeholder="แท็ก (คั่นด้วย , )" aria-label="แท็กที่จะติดหรือถอด" />
+          <button type="button" id="bulkTagAdd" class="btn btn-ghost">➕ ติดแท็ก</button>
+          <button type="button" id="bulkTagRemove" class="btn btn-ghost">➖ ถอดแท็ก</button>
+        </div>
+        <div class="bulk-row">
+          <input type="text" id="bulkSubject" list="subjectList" placeholder="ตั้งวิชา…" aria-label="ตั้งวิชาให้เกมที่เลือก" />
+          <select id="bulkMode" aria-label="ตั้งโหมดเล่นให้เกมที่เลือก">
+            <option value="">ตั้งโหมด…</option>
+            <option value="เดี่ยว">เดี่ยว</option>
+            <option value="ทีม">ทีม</option>
+            <option value="ครูคุมจอ">ครูคุมจอ</option>
+          </select>
+          <input type="number" id="bulkMinutes" min="1" max="180" placeholder="นาที" aria-label="ตั้งเวลาเล่นให้เกมที่เลือก" />
+          <select id="bulkBadge" aria-label="ตั้งป้ายให้เกมที่เลือก">
+            <option value="">ตั้งป้าย…</option>
+            <option value="แนะนำ">แนะนำ</option>
+            <option value="ใหม่">ใหม่</option>
+            <option value="__clear__">(ลบป้ายออก)</option>
+          </select>
+          <button type="button" id="bulkApply" class="btn btn-primary">✓ ใช้กับที่เลือก</button>
+        </div>
+        <div class="bulk-row">
+          <button type="button" id="bulkDelete" class="btn btn-ghost danger-text">🗑️ ลบเกมที่เลือก</button>
+        </div>
+      </div>
 
       <div class="commit-bar">
         <div class="btn-row">

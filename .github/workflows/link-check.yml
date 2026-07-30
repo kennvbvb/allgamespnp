@@ -6,8 +6,10 @@ on:
     - cron: "0 1 * * 1"
   workflow_dispatch:
 
+# ต้องเขียนได้ เพราะ commit ผลตรวจ (link-status.json) กลับ repo
+# ให้หน้า admin อ่านไปโชว์ ⚠️ บนเกมที่ลิงก์เสีย
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   links:
@@ -17,5 +19,28 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+
       - name: Check all game links
+        id: check
+        continue-on-error: true # ให้ขั้นถัดไป commit ผลตรวจได้แม้มีลิงก์เสีย
         run: node scripts/check-links.mjs
+
+      - name: Commit link status
+        run: |
+          # ใช้ status --porcelain เพื่อจับทั้งไฟล์ที่แก้และไฟล์ใหม่ (ครั้งแรกยังไม่ถูก track)
+          if [ -z "$(git status --porcelain link-status.json)" ]; then
+            echo "ผลตรวจไม่เปลี่ยน ไม่ต้อง commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add link-status.json
+          git commit -m "ผลตรวจลิงก์เกมอัตโนมัติ [skip ci]"
+          git push
+
+      # ให้ workflow แดงถ้ามีลิงก์เสีย (ครูจะได้รู้จากอีเมลแจ้งของ GitHub)
+      - name: Fail if broken links
+        if: steps.check.outcome == 'failure'
+        run: |
+          echo "::error::พบลิงก์เกมที่เปิดไม่ได้ — ดูรายละเอียดในขั้น Check all game links"
+          exit 1

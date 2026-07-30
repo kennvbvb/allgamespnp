@@ -23,14 +23,20 @@ test.describe("Phase B — ลากจัดลำดับในหน้า a
     expect(await titles()).toEqual(["เกม A", "เกม B", "เกม C"]);
 
     const handleA = page.locator(".admin-list-item", { hasText: "เกม A" }).locator(".drag-handle");
-    const itemC = page.locator(".admin-list-item", { hasText: "เกม C" });
-    // page.mouse ใช้พิกัด viewport — ต้องเลื่อนรายการเข้ามาในจอก่อนแล้วค่อยอ่านพิกัด
-    await itemC.scrollIntoViewIfNeeded();
-    const cb = await itemC.boundingBox();
+    // hover จะเลื่อนรายการเข้าจอให้เอง แล้วค่อยอ่านพิกัดจริง (page.mouse ใช้พิกัด viewport)
+    // hover จะเลื่อนรายการเข้าจอให้เอง แล้วค่อยอ่านพิกัดจริง (page.mouse ใช้พิกัด viewport)
     await handleA.hover();
+    const hb = await handleA.boundingBox();
+    const items = page.locator(".admin-list-item");
+    const box1 = await items.nth(1).boundingBox();
+    const box2 = await items.nth(2).boundingBox();
+
     await page.mouse.down();
-    // ลากลงไปถึงครึ่งล่างของ C เพื่อให้ A ไปอยู่ท้ายสุด
-    await page.mouse.move(cb.x + cb.width / 2, cb.y + cb.height - 2, { steps: 10 });
+    // ลากผ่าน "จุดกึ่งกลาง" ของรายการถัดไปทีละอัน — DOM สลับตำแหน่งสดๆ ระหว่างลาก
+    // ต้องเล็งจุดกึ่งกลางจริงของแต่ละรายการ (คำนวณจากระยะก้าวจะพลาดเพราะมี gap)
+    for (const box of [box1, box2]) {
+      await page.mouse.move(hb.x + hb.width / 2, box.y + box.height / 2 + 2, { steps: 8 });
+    }
     await page.mouse.up();
 
     expect(await titles()).toEqual(["เกม B", "เกม C", "เกม A"]);

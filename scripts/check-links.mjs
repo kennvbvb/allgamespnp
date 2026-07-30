@@ -40,14 +40,30 @@ async function check(game) {
 }
 
 let failed = 0;
+// ผลรายเกม เก็บลง link-status.json ให้หน้า admin อ่านไปโชว์ ⚠️ ได้
+const report = { checkedAt: new Date().toISOString(), games: {} };
+
 for (const game of games) {
-  if (!game || typeof game.url !== "string") { console.error(`✗ ${game && game.title}: ไม่มี url`); failed++; continue; }
+  if (!game || typeof game.url !== "string") {
+    console.error(`✗ ${game && game.title}: ไม่มี url`);
+    if (game && game.id) report.games[game.id] = { ok: false, status: "ไม่มี url" };
+    failed++;
+    continue;
+  }
   const r = await check(game);
+  if (game.id) report.games[game.id] = { ok: r.ok, status: r.msg };
   if (r.ok) console.log(`✓ ${game.title} — ${r.msg}`);
   else { console.error(`✗ ${game.title} — ${r.msg}\n    ${game.url}`); failed++; }
 }
 
-console.log("");
+report.brokenCount = failed;
+report.total = games.length;
+fs.writeFileSync(
+  path.join(__dir, "..", "link-status.json"),
+  JSON.stringify(report, null, 2) + "\n"
+);
+console.log("\nเขียนผลลง link-status.json แล้ว");
+
 if (failed) {
   console.error(`พบลิงก์มีปัญหา ${failed}/${games.length} เกม`);
   process.exit(1);
