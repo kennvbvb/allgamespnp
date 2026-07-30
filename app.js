@@ -136,13 +136,14 @@
     return sortGrades(Array.from(set));
   }
 
+  // แท็กเรียงตามจำนวนเกมมาก→น้อย (แท็กที่ใช้บ่อยอยู่ต้นแถว เห็นก่อนบนมือถือ)
   function uniqueTags() {
-    const set = new Set();
+    const count = {};
     games.forEach(function (g) {
-      if (Array.isArray(g.tags)) g.tags.forEach(function (t) { if (t) set.add(t); });
+      if (Array.isArray(g.tags)) g.tags.forEach(function (t) { if (t) count[t] = (count[t] || 0) + 1; });
     });
-    return Array.from(set).sort(function (a, b) {
-      return a.localeCompare(b, "th");
+    return Object.keys(count).sort(function (a, b) {
+      return count[b] - count[a] || a.localeCompare(b, "th");
     });
   }
 
@@ -164,6 +165,25 @@
       chip.dataset.value = value;
       container.appendChild(chip);
     });
+  }
+
+  // ---------- ย่อ/ขยายแถวแท็ก (แท็กเยอะ ไม่ให้ดันการ์ดตกจอบนมือถือ) ----------
+  const TAG_CHIPS_VISIBLE = 6;
+  function setupTagCollapse(tags) {
+    if (!el.tagChips || tags.length <= TAG_CHIPS_VISIBLE) return;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chip chip-more";
+    // ถ้าแท็กที่เลือกไว้ (จาก URL) อยู่ในส่วนที่ถูกซ่อน ให้กางออกตั้งแต่แรก
+    let expanded = !!(state.tag && tags.indexOf(state.tag) >= TAG_CHIPS_VISIBLE);
+    function apply() {
+      el.tagChips.classList.toggle("is-collapsed", !expanded);
+      btn.textContent = expanded ? "− ย่อแท็ก" : "+ อีก " + (tags.length - TAG_CHIPS_VISIBLE) + " แท็ก";
+      btn.setAttribute("aria-expanded", expanded ? "true" : "false");
+    }
+    btn.addEventListener("click", function () { expanded = !expanded; apply(); });
+    el.tagChips.appendChild(btn);
+    apply();
   }
 
   function syncChips() {
@@ -247,7 +267,14 @@
     if (state.sort === "name") {
       arr.sort(function (a, b) { return a.title.localeCompare(b.title, "th"); });
     } else if (state.sort === "new") {
-      arr.sort(function (a, b) { return String(b.added || "").localeCompare(String(a.added || "")); });
+      // เกมเก่าที่ยังไม่มี added: ใช้ลำดับย้อนกลับในไฟล์ (admin เพิ่มต่อท้าย → ท้ายสุด = ใหม่สุด)
+      // เกมที่มี added ถือว่าใหม่กว่าเกมที่ไม่มี เพราะ admin เริ่มบันทึกวันที่ตั้งแต่มีฟีเจอร์นี้
+      arr.sort(function (a, b) {
+        if (a.added && b.added) return String(b.added).localeCompare(String(a.added));
+        if (a.added) return -1;
+        if (b.added) return 1;
+        return b.index - a.index;
+      });
     } else if (state.sort === "recommended") {
       const rank = function (g) { return g.badge === "แนะนำ" ? 0 : 1; };
       arr.sort(function (a, b) { return rank(a) - rank(b); });
@@ -764,6 +791,7 @@
   const tags = uniqueTags();
   if (el.tagChips) buildChips(el.tagChips, tags, "tag");
   if (el.tagFilterGroup) el.tagFilterGroup.hidden = tags.length === 0;
+  setupTagCollapse(tags);
   syncChips();
   render();
   openFromHash();

@@ -15,7 +15,13 @@ const GAMES = [
     ],
     "url": "https://script.google.com/macros/s/AKfycbzPaqUlPw0KL-KUXgXky3Zg5KmgCRX1e-bWPKkcRGwWWu4mDoUiBPRVe_fsJNnj38uCLg/exec",
     "emoji": "🏛️",
-    "color": "#0e7490"
+    "color": "#0e7490",
+    "topic": "การปกครองส่วนท้องถิ่น",
+    "mode": "ทีม",
+    "tags": [
+      "หน้าที่พลเมือง",
+      "ท้องถิ่น"
+    ]
   },
   {
     "id": "game-2",
@@ -26,7 +32,13 @@ const GAMES = [
       "ป.4"
     ],
     "url": "https://script.google.com/macros/s/AKfycbyh06btl1iUVI-qbQX5Kd3M6_xMliVz3cWxvXnCjyIFyMAfmw9NkxnNuRAqCedLWR4V/exec",
-    "color": "#4f8ef7"
+    "emoji": "🗺️",
+    "color": "#4f8ef7",
+    "topic": "ภูมิภาคและวัฒนธรรมไทย",
+    "tags": [
+      "ภูมิศาสตร์",
+      "วัฒนธรรม"
+    ]
   },
   {
     "id": "game-3",
@@ -37,7 +49,13 @@ const GAMES = [
       "ป.5"
     ],
     "url": "https://script.google.com/macros/s/AKfycbx90G6p6Bwe8y9ZFEqPg79t4sA6um5bcCN8ubikzlUr_PbwgaJgJ5T1jYeWboYSWE3E/exec",
-    "color": "#4f8ef7"
+    "emoji": "📝",
+    "color": "#4f8ef7",
+    "topic": "ท้องถิ่นและชุมชน",
+    "tags": [
+      "ท้องถิ่น",
+      "แบบทดสอบ"
+    ]
   },
   {
     "id": "game-4",
@@ -48,7 +66,12 @@ const GAMES = [
       "ป.4"
     ],
     "url": "https://script.google.com/macros/s/AKfycby0M2jFxxZddwDYLjEyDEhqUP4i9kLUWyiv88jAN2HnWLB_Porfgdq-LYNEQKgjpOwe/exec",
-    "color": "#ee291b"
+    "emoji": "🎭",
+    "color": "#ee291b",
+    "topic": "ขนบธรรมเนียมและวัฒนธรรมไทย",
+    "tags": [
+      "วัฒนธรรม"
+    ]
   },
   {
     "id": "game-5",
@@ -59,7 +82,13 @@ const GAMES = [
       "ป.5"
     ],
     "url": "https://script.google.com/macros/s/AKfycbx7mQ35S7qcyknVPWIuIyK4BxdRVUOVlJTC6dFye9D0NRd1SehgYxXLVRF1GjihEEIwOQ/exec",
-    "color": "#e90101"
+    "emoji": "🏯",
+    "color": "#e90101",
+    "topic": "อารยธรรมและอาเซียน",
+    "tags": [
+      "ประวัติศาสตร์",
+      "อาเซียน"
+    ]
   },
   {
     "id": "game-6",
@@ -70,7 +99,13 @@ const GAMES = [
       "ป.4"
     ],
     "url": "https://script.google.com/macros/s/AKfycbxT0mM8453Aii25tT1AwgroTrN0tKnEgw0rtBCYEZDRAXMQVoNwFCWyDO3Ybxsl4_Y/exec",
-    "color": "#7119f5"
+    "emoji": "🔑",
+    "color": "#7119f5",
+    "topic": "สิทธิเด็ก 4 ด้าน",
+    "tags": [
+      "หน้าที่พลเมือง",
+      "สิทธิเด็ก"
+    ]
   },
   {
     "id": "game-7",
@@ -81,7 +116,12 @@ const GAMES = [
       "ป.6"
     ],
     "url": "https://script.google.com/macros/s/AKfycbwsO2Okq_20whV8_DIGeMy02OwYYQxLIjKqUPWaXtt7gomK6vzg2KBYG-0BXbGArm5OVQ/exec",
-    "color": "#064aa2"
+    "emoji": "👑",
+    "color": "#064aa2",
+    "topic": "ประวัติศาสตร์รัตนโกสินทร์",
+    "tags": [
+      "ประวัติศาสตร์"
+    ]
   },
   {
     "id": "game-8",
@@ -92,7 +132,14 @@ const GAMES = [
       "ป.6"
     ],
     "url": "https://script.google.com/macros/s/AKfycbySNoetU34kkLWr7NryrCSehPATht0OXC5Xm5J-DdDltFl84_naVh636613DvRNrn9o/exec",
-    "color": "#4200bd"
+    "emoji": "⚖️",
+    "color": "#4200bd",
+    "topic": "กฎหมายใกล้ตัว",
+    "tags": [
+      "หน้าที่พลเมือง",
+      "กฎหมาย",
+      "แบบทดสอบ"
+    ]
   },
   {
     "id": "game-9",
@@ -103,7 +150,14 @@ const GAMES = [
       "ป.4"
     ],
     "url": "https://script.google.com/macros/s/AKfycbwkvO0ammcY77NsiMByq-pAT47cB_cFPJUIw1SjoDUZrtjzTvkWcghXLBBcugf96l1xsg/exec",
-    "color": "#4f8ef7"
+    "emoji": "🗳️",
+    "color": "#4f8ef7",
+    "topic": "ประชาธิปไตย",
+    "mode": "ทีม",
+    "tags": [
+      "หน้าที่พลเมือง",
+      "เกมกระดาน"
+    ]
   },
   {
     "id": "game-10",
@@ -114,7 +168,12 @@ const GAMES = [
       "ป.4"
     ],
     "url": "https://script.google.com/macros/s/AKfycbz_jwq9k942xWJkZlPFPCvFhnK8A07rlxqcZWnACtySvuRLlCSmxCG7LIZHJtShWH5O/exec",
-    "color": "#1d6303"
+    "emoji": "🏺",
+    "color": "#1d6303",
+    "topic": "หลักฐานทางประวัติศาสตร์",
+    "tags": [
+      "ประวัติศาสตร์"
+    ]
   },
   {
     "id": "game-11",
@@ -125,7 +184,12 @@ const GAMES = [
       "ป.6"
     ],
     "url": "https://script.google.com/macros/s/AKfycbwYdrzsJUrxBiGcY85BUS6FDR6KGv3BNcxHLuIaZ5PuNo2NEz0c4Ncxbb2J8w5quDgx/exec",
-    "color": "#003899"
+    "emoji": "📋",
+    "color": "#003899",
+    "topic": "งานทะเบียนราษฎร",
+    "tags": [
+      "หน้าที่พลเมือง"
+    ]
   },
   {
     "id": "game-12",
@@ -136,7 +200,12 @@ const GAMES = [
       "ป.5"
     ],
     "url": "https://script.google.com/macros/s/AKfycbzUMA-WUDpGgLa9T2bvosnAo0Usge3s5uO9Hh_jKhmaQgsX_90M-d9enaoAD9MU0Rua/exec",
-    "color": "#4f8ef7"
+    "emoji": "🤝",
+    "color": "#4f8ef7",
+    "topic": "สิทธิและหน้าที่พลเมือง",
+    "tags": [
+      "หน้าที่พลเมือง"
+    ]
   },
   {
     "id": "game-13",
@@ -147,7 +216,12 @@ const GAMES = [
       "ป.4"
     ],
     "url": "https://script.google.com/macros/s/AKfycby6WaMKeO_PyDAS4zsYN8mr24-SFyYugo_JBWGwmLjAQ7ejLixJhbCD6oMs44WpSu6Wpw/exec",
-    "color": "#e114b5"
+    "emoji": "🌟",
+    "color": "#e114b5",
+    "topic": "พลเมืองดีในสังคม",
+    "tags": [
+      "หน้าที่พลเมือง"
+    ]
   },
   {
     "id": "game-14",
@@ -158,7 +232,13 @@ const GAMES = [
       "ป.5"
     ],
     "url": "https://script.google.com/macros/s/AKfycbx-WB45gk236f9wg0h_jv0gYoTWWlHTs8-zBMwLyGYjGXaoqbjiNNt2zcgUMTzT2Izl/exec",
-    "color": "#ff9d14"
+    "emoji": "🦸",
+    "color": "#ff9d14",
+    "topic": "สิทธิเด็ก",
+    "tags": [
+      "หน้าที่พลเมือง",
+      "สิทธิเด็ก"
+    ]
   },
   {
     "id": "game-15",
@@ -169,7 +249,12 @@ const GAMES = [
       "ป.3"
     ],
     "url": "https://script.google.com/macros/s/AKfycbzIpjsSHiVx9VPPLg2ocMj3FvwJcgKLxRMLe8jtDAFCP0VROH8oGFBvfpfwgjuSOhFg/exec",
-    "color": "#ccb100"
+    "emoji": "🪷",
+    "color": "#ccb100",
+    "topic": "หลักธรรมพุทธศาสนา",
+    "tags": [
+      "ศาสนา"
+    ]
   },
   {
     "id": "game-16",
@@ -180,7 +265,13 @@ const GAMES = [
       "ป.5"
     ],
     "url": "https://script.google.com/macros/s/AKfycbyxSLhejIR8RV02cgk3PhconhD41jItKb6G1IbRWyw2LSOztfbOgcKokGvGSxCns7Fr/exec",
-    "color": "#dbafe4"
+    "emoji": "🛡️",
+    "color": "#dbafe4",
+    "topic": "สิทธิเด็ก",
+    "tags": [
+      "หน้าที่พลเมือง",
+      "สิทธิเด็ก"
+    ]
   },
   {
     "id": "game-17",
@@ -191,7 +282,13 @@ const GAMES = [
       "ป.5"
     ],
     "url": "https://script.google.com/macros/s/AKfycbzOlRW-FH3gxN6S9NrOeODPfSGwGMQeB79N0gWiDGDA_KFWK8ENFhrGM5odWMQ_vxej/exec",
-    "color": "#1a7425"
+    "emoji": "🛒",
+    "color": "#1a7425",
+    "topic": "ตลาดและการซื้อขาย",
+    "tags": [
+      "เศรษฐศาสตร์",
+      "เกมกระดาน"
+    ]
   },
   {
     "id": "game-18",
@@ -202,7 +299,12 @@ const GAMES = [
       "ป.6"
     ],
     "url": "https://script.google.com/macros/s/AKfycbx8mvGXGt38Rb8-IJcqqKPsYt_JDpKUeWdnA15klheCkiqBHRzajDSefPb465vqNegPKQ/exec",
-    "color": "#b6d0fb"
+    "emoji": "💡",
+    "color": "#b6d0fb",
+    "topic": "ศาสนาเปรียบเทียบ",
+    "tags": [
+      "ศาสนา"
+    ]
   },
   {
     "id": "game-19",
@@ -213,7 +315,12 @@ const GAMES = [
       "ป.6"
     ],
     "url": "https://script.google.com/macros/s/AKfycby2ElaaTLeNkAQHMAHXTYO1PjSeOqwol8QNJo_zA62y9uQNK0KSGhXHXKKkYTTcAPBI/exec",
-    "color": "#f59b00"
+    "emoji": "🧘",
+    "color": "#f59b00",
+    "topic": "หลักธรรมนำปัญญา",
+    "tags": [
+      "ศาสนา"
+    ]
   }
 ];
 

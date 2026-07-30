@@ -50,3 +50,44 @@ test.describe("Phase A — metadata + sort", () => {
     expect(await titles()).toEqual(["Alpha เกม", "Beta เกม", "Gamma เกม"]);
   });
 });
+
+test.describe('Phase A — sort "ใหม่ล่าสุด" เมื่อข้อมูลไม่มี added', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route("**/announcement.js", (r) =>
+      r.fulfill({ contentType: "application/javascript", body: "window.ANNOUNCEMENT={enabled:false};" })
+    );
+  });
+
+  test("ไม่มี added ทุกเกม → เรียงย้อนลำดับในไฟล์ (ท้ายไฟล์ = ใหม่สุด)", async ({ page }) => {
+    await page.route("**/games.js", (r) =>
+      r.fulfill({
+        contentType: "application/javascript",
+        body: `window.GAMES=[
+          {id:"one",title:"หนึ่ง",subject:"ส",grades:["ป.4"],url:"https://script.google.com/1/exec"},
+          {id:"two",title:"สอง",subject:"ส",grades:["ป.4"],url:"https://script.google.com/2/exec"},
+          {id:"three",title:"สาม",subject:"ส",grades:["ป.4"],url:"https://script.google.com/3/exec"}
+        ];`,
+      })
+    );
+    await page.goto("/index.html?sort=new");
+    expect(await page.locator(".card-title").allTextContents()).toEqual(["สาม", "สอง", "หนึ่ง"]);
+  });
+
+  test("ผสมกัน → เกมที่มี added ถือว่าใหม่กว่าเกมที่ไม่มี", async ({ page }) => {
+    await page.route("**/games.js", (r) =>
+      r.fulfill({
+        contentType: "application/javascript",
+        body: `window.GAMES=[
+          {id:"old1",title:"เก่า 1",subject:"ส",grades:["ป.4"],url:"https://script.google.com/a/exec"},
+          {id:"old2",title:"เก่า 2",subject:"ส",grades:["ป.4"],url:"https://script.google.com/b/exec"},
+          {id:"new1",title:"ใหม่ มี.ค.",subject:"ส",grades:["ป.4"],url:"https://script.google.com/c/exec",added:"2026-03-01"},
+          {id:"new2",title:"ใหม่ ก.ค.",subject:"ส",grades:["ป.4"],url:"https://script.google.com/d/exec",added:"2026-07-01"}
+        ];`,
+      })
+    );
+    await page.goto("/index.html?sort=new");
+    expect(await page.locator(".card-title").allTextContents()).toEqual([
+      "ใหม่ ก.ค.", "ใหม่ มี.ค.", "เก่า 2", "เก่า 1",
+    ]);
+  });
+});

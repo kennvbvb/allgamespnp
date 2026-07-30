@@ -143,6 +143,16 @@ body {
   gap: 8px;
 }
 
+/* แถวแท็กแบบย่อ: โชว์ 6 อันแรก ที่เหลือซ่อนไว้ใต้ปุ่ม "+ อีก N แท็ก" */
+.chip-row.is-collapsed .chip:nth-child(n + 7):not(.chip-more) {
+  display: none;
+}
+
+.chip-more {
+  border-style: dashed;
+  color: var(--primary);
+}
+
 .chip {
   display: inline-flex;
   align-items: center;
