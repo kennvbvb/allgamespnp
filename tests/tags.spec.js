@@ -24,10 +24,14 @@ test.describe("Phase B — แท็ก/หมวดหมู่", () => {
     );
     await page.goto("/index.html");
 
-    // กลุ่มแท็กแสดง (มีแท็กในข้อมูล) + ชิปเป็น union เรียงแล้ว
+    // กลุ่มแท็กแสดง (มีแท็กในข้อมูล) + ชิปเป็น union เรียงตามจำนวนเกม
     await expect(page.locator("#tagFilterGroup")).toBeVisible();
-    const chipTexts = await page.locator("#tagChips .chip").allTextContents();
-    expect(chipTexts).toEqual(["ทบทวนสอบ", "ประวัติศาสตร์"]);
+    const chipValues = await page.locator("#tagChips .chip").evaluateAll((els) =>
+      els.map((e) => e.dataset.value)
+    );
+    expect(chipValues).toEqual(["ทบทวนสอบ", "ประวัติศาสตร์"]);
+    // ชิปโชว์จำนวนเกมต่อแท็ก (ทบทวนสอบ 2 เกม)
+    await expect(page.locator('#tagChips .chip[data-value="ทบทวนสอบ"] .chip-count')).toHaveText("2");
 
     // กดแท็ก "ประวัติศาสตร์" → เหลือ Alpha
     await page.locator("#tagChips .chip", { hasText: "ประวัติศาสตร์" }).click();
@@ -36,7 +40,7 @@ test.describe("Phase B — แท็ก/หมวดหมู่", () => {
 
     // reload คงค่า tag
     await page.reload();
-    await expect(page.locator("#tagChips .chip.active")).toHaveText("ประวัติศาสตร์");
+    await expect(page.locator("#tagChips .chip.active")).toHaveAttribute("data-value", "ประวัติศาสตร์");
     await expect(page.locator(".card-title")).toHaveText(["Alpha เกม"]);
 
     // ล้างตัวกรอง → กลับมาครบ
@@ -80,7 +84,10 @@ test.describe("Phase B — แท็ก/หมวดหมู่", () => {
     );
     await page.goto("/index.html");
     // เยอะ=3, กลาง=2, น้อย=1
-    expect(await page.locator("#tagChips .chip").allTextContents()).toEqual(["เยอะ", "กลาง", "น้อย"]);
+    const values = await page.locator("#tagChips .chip").evaluateAll((els) => els.map((e) => e.dataset.value));
+    expect(values).toEqual(["เยอะ", "กลาง", "น้อย"]);
+    const counts = await page.locator("#tagChips .chip-count").allTextContents();
+    expect(counts).toEqual(["3", "2", "1"]);
   });
 
   test("แท็กเกิน 6 อัน → ย่อไว้ กดขยายได้ + ถ้าแท็กที่เลือกถูกซ่อนจะกางให้เอง", async ({ page }) => {
@@ -107,7 +114,7 @@ test.describe("Phase B — แท็ก/หมวดหมู่", () => {
     // เข้าด้วย URL ที่เลือกแท็กซึ่งอยู่ในส่วนที่ถูกซ่อน → ต้องกางให้เห็นเลย
     await page.goto("/index.html?tag=t8");
     await expect(page.locator("#tagChips .chip:not(.chip-more):visible")).toHaveCount(9);
-    await expect(page.locator("#tagChips .chip.active")).toHaveText("t8");
+    await expect(page.locator("#tagChips .chip.active")).toHaveAttribute("data-value", "t8");
   });
 
   test("ไม่มีแท็กในข้อมูล → ซ่อนกลุ่มตัวกรองแท็ก", async ({ page }) => {

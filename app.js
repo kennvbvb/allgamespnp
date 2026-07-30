@@ -66,6 +66,9 @@
     sortSelect: document.getElementById("sortSelect"),
     resultCount: document.getElementById("resultCount"),
     clearFilters: document.getElementById("clearFilters"),
+    shareSet: document.getElementById("shareSet"),
+    fullscreenBtn: document.getElementById("fullscreenBtn"),
+    iframeWrap: document.querySelector(".iframe-wrap"),
     emptyState: document.getElementById("emptyState"),
     modal: document.getElementById("gameModal"),
     frame: document.getElementById("gameFrame"),
@@ -105,6 +108,12 @@
   }
 
   // ---------- Utils ----------
+  // ตัดวรรณยุกต์/ไม้ทัณฑฆาต/ไม้ยมกออกก่อนเทียบ เพื่อให้พิมพ์ "ทองถิน" เจอ "ท้องถิ่น"
+  // U+0E48–U+0E4B วรรณยุกต์ · U+0E4C ทัณฑฆาต · U+0E4D นิคหิต · U+0E4E ยามักการ
+  function normalizeThai(str) {
+    return String(str).toLowerCase().replace(/[่-๎]/g, "");
+  }
+
   function sortGrades(list) {
     return list.slice().sort(function (a, b) {
       const ia = GRADE_ORDER.indexOf(a);
@@ -148,13 +157,26 @@
   }
 
   // ---------- Build filter chips ----------
+  // นับจำนวนเกมของค่าหนึ่งในมิติที่กำหนด (ใช้โชว์ตัวเลขบนชิป)
+  function countFor(key, value) {
+    return games.filter(function (g) {
+      if (key === "subject") return g.subject === value;
+      if (key === "grade") return g.grades.indexOf(value) !== -1;
+      if (key === "tag") return Array.isArray(g.tags) && g.tags.indexOf(value) !== -1;
+      return false;
+    }).length;
+  }
+
   function buildChips(container, values, key) {
     container.innerHTML = "";
     values.forEach(function (value) {
       const chip = document.createElement("button");
       chip.type = "button";
       chip.className = "chip";
-      chip.textContent = value;
+      const n = countFor(key, value);
+      chip.innerHTML = escapeHtml(value) + ' <span class="chip-count">' + n + "</span>";
+      // screen reader อ่านเป็นประโยคเข้าใจง่าย แทนการอ่าน "ป.4 6"
+      chip.setAttribute("aria-label", value + " — " + n + " เกม");
       chip.setAttribute("aria-pressed", "false");
       chip.addEventListener("click", function () {
         state[key] = state[key] === value ? null : value;
@@ -238,14 +260,14 @@
 
   // ---------- Filter + Sort ----------
   function filteredGames() {
-    const q = state.search.trim().toLowerCase();
+    const q = normalizeThai(state.search.trim());
     let list = games.filter(function (g) {
       if (state.subject && g.subject !== state.subject) return false;
       if (state.grade && g.grades.indexOf(state.grade) === -1) return false;
       if (state.tag && (!Array.isArray(g.tags) || g.tags.indexOf(state.tag) === -1)) return false;
       if (q) {
-        const hay = (g.title + " " + (g.description || "") + " " + g.subject +
-          " " + (g.topic || "") + " " + (g.tags ? g.tags.join(" ") : "")).toLowerCase();
+        const hay = normalizeThai(g.title + " " + (g.description || "") + " " + g.subject +
+          " " + (g.topic || "") + " " + (g.tags ? g.tags.join(" ") : ""));
         if (hay.indexOf(q) === -1) return false;
       }
       return true;
@@ -351,6 +373,12 @@
     }
     const hasFilter = state.subject || state.grade || state.tag || state.search.trim() || state.view;
     el.clearFilters.hidden = !hasFilter;
+    // แชร์ชุดเกมมีความหมายเฉพาะเมื่อมีตัวกรอง และมีเกมให้แชร์จริง
+    // (มุมมองโปรด/เล่นล่าสุด เก็บในเครื่องคนอื่น แชร์ไปก็ไม่ตรง จึงไม่โชว์)
+    if (el.shareSet) {
+      const shareable = (state.subject || state.grade || state.tag || state.search.trim()) && !state.view;
+      el.shareSet.hidden = !shareable || list.length === 0;
+    }
   }
 
   function escapeHtml(str) {
@@ -432,6 +460,26 @@
       toggleFavorite(currentModalGame.id);
       updateFavButton();
       if (state.view === "fav") render(); // อัปเดตกริดถ้ากำลังดูเฉพาะโปรด
+    });
+  }
+
+  // ---------- เล่นเต็มจอ (ซ่อนปุ่มถ้าเบราว์เซอร์ไม่รองรับ เช่น iOS Safari บางรุ่น) ----------
+  function initFullscreen() {
+    if (!el.fullscreenBtn || !el.iframeWrap) return;
+    const target = el.iframeWrap;
+    if (!target.requestFullscreen && !target.webkitRequestFullscreen) return;
+    el.fullscreenBtn.hidden = false;
+    el.fullscreenBtn.addEventListener("click", function () {
+      const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+      if (fsEl) {
+        (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      } else {
+        (target.requestFullscreen || target.webkitRequestFullscreen).call(target);
+      }
+    });
+    document.addEventListener("fullscreenchange", function () {
+      const on = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      el.fullscreenBtn.textContent = on ? "⛶ ออกจากเต็มจอ" : "⛶ เต็มจอ";
     });
   }
 
@@ -582,20 +630,13 @@
     if (!el.modal.hidden) hideModal();
   });
 
-  el.copyLink.addEventListener("click", function () {
-    const url = el.copyLink.dataset.url;
+  // คัดลอกข้อความลงคลิปบอร์ด + สลับข้อความปุ่มเป็น "คัดลอกแล้ว" ชั่วคราว
+  function copyToClipboard(url, btn, okLabel, resetLabel) {
     const done = function () {
-      el.copyLink.textContent = "✅ คัดลอกแล้ว";
-      setTimeout(function () {
-        el.copyLink.textContent = "🔗 คัดลอกลิงก์แชร์";
-      }, 1600);
+      btn.textContent = okLabel;
+      setTimeout(function () { btn.textContent = resetLabel; }, 1600);
     };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).then(done).catch(fallbackCopy);
-    } else {
-      fallbackCopy();
-    }
-    function fallbackCopy() {
+    const fallbackCopy = function () {
       const ta = document.createElement("textarea");
       ta.value = url;
       ta.style.position = "fixed";
@@ -609,8 +650,24 @@
         /* ไม่รองรับ */
       }
       document.body.removeChild(ta);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done).catch(fallbackCopy);
+    } else {
+      fallbackCopy();
     }
+  }
+
+  el.copyLink.addEventListener("click", function () {
+    copyToClipboard(el.copyLink.dataset.url, el.copyLink, "✅ คัดลอกแล้ว", "🔗 คัดลอกลิงก์แชร์");
   });
+
+  // แชร์ "ชุดเกม" = ลิงก์หน้ารวมพร้อมตัวกรองที่เลือกอยู่ (ครูส่งให้นักเรียนได้เลย)
+  if (el.shareSet) {
+    el.shareSet.addEventListener("click", function () {
+      copyToClipboard(location.href, el.shareSet, "✅ คัดลอกลิงก์ชุดเกมแล้ว", "🔗 แชร์ชุดเกมนี้");
+    });
+  }
 
   // ---------- Deep link (#game=<id>) ----------
   function openFromHash() {
@@ -795,6 +852,7 @@
   syncChips();
   render();
   openFromHash();
+  initFullscreen();
   showAnnouncement();
   injectJsonLd();
   initPwa();

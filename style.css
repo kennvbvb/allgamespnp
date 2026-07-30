@@ -153,6 +153,19 @@ body {
   color: var(--primary);
 }
 
+/* ตัวเลขจำนวนเกมบนชิป — จางกว่าชื่อ แต่ยังผ่าน contrast AA */
+.chip-count {
+  margin-left: 5px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.chip.active .chip-count {
+  color: inherit;
+  opacity: 0.85;
+}
+
 .chip {
   display: inline-flex;
   align-items: center;
