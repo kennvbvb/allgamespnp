@@ -19,6 +19,10 @@ test("index.html ผ่าน axe (ไม่มี critical/serious)", async ({ 
   await auditNoSerious(page, "/index.html");
 });
 
+test("index.html โหมดครูฉายจอ ผ่าน axe (ไม่มี critical/serious)", async ({ page }) => {
+  await auditNoSerious(page, "/index.html?present=1");
+});
+
 test("admin.html ผ่าน axe (ไม่มี critical/serious)", async ({ page }) => {
   await auditNoSerious(page, "/admin.html");
 });

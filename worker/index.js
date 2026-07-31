@@ -221,6 +221,30 @@ function bytesToB64(bytes) {
   return btoa(s);
 }
 
+// ประวัติการแก้ไขไฟล์ — ส่งกลับเฉพาะที่หน้า admin ต้องใช้
+// (ไม่ส่ง payload ดิบของ GitHub ต่อ จะได้ไม่หลุดข้อมูลเกินจำเป็น เช่น อีเมลผู้แก้)
+async function handleHistory(req, url, env, sess) {
+  const path = url.searchParams.get("path") || "";
+  if (!ALLOWED_PATHS.includes(path)) return json({ error: "path ไม่ได้รับอนุญาต" }, env, 400);
+  const ref = url.searchParams.get("ref") || "main";
+  const limit = Math.min(Math.max(parseInt(url.searchParams.get("limit"), 10) || 10, 1), 30);
+  const api = `https://api.github.com/repos/${env.REPO_OWNER}/${env.REPO_NAME}/commits` +
+    `?path=${encodeURIComponent(path)}&sha=${encodeURIComponent(ref)}&per_page=${limit}`;
+  const r = await fetch(api, { headers: ghHeaders(sess.token) });
+  if (!r.ok) {
+    const e = await r.json().catch(() => ({}));
+    return json({ error: `โหลดประวัติไม่สำเร็จ (${r.status}) ${e.message || ""}` }, env, 502);
+  }
+  const list = await r.json().catch(() => []);
+  const commits = (Array.isArray(list) ? list : []).map((x) => ({
+    sha: x.sha,
+    date: x.commit?.author?.date || "",
+    login: x.author?.login || x.commit?.author?.name || "",
+    message: x.commit?.message || "",
+  }));
+  return json({ commits }, env);
+}
+
 async function handleCommit(req, env, sess) {
   const body = await req.json().catch(() => null);
   if (!body || typeof body.path !== "string" || typeof body.text !== "string") {
@@ -271,6 +295,12 @@ export default {
       if (!sess) return json({ error: "ยังไม่ได้ล็อกอิน" }, env, 401);
       if (!originOk(req, env)) return json({ error: "origin ไม่ถูกต้อง" }, env, 403);
       return handleGetFile(req, url, env, sess);
+    }
+
+    if (p === "/api/history" && req.method === "GET") {
+      if (!sess) return json({ error: "ยังไม่ได้ล็อกอิน" }, env, 401);
+      if (!originOk(req, env)) return json({ error: "origin ไม่ถูกต้อง" }, env, 403);
+      return handleHistory(req, url, env, sess);
     }
 
     if (p === "/api/commit" && req.method === "POST") {

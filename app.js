@@ -53,7 +53,8 @@
   }
 
   // สถานะตัวกรอง (null = ทั้งหมด) + การจัดเรียง ("" = ตามลำดับในไฟล์) + มุมมอง ("" | "fav" | "recent")
-  const state = { subject: null, grade: null, tag: null, search: "", sort: "", view: "" };
+  // present = โหมดครูฉายจอ (ตัวอักษรใหญ่) — เป็น "โหมดแสดงผล" ไม่ใช่ตัวกรอง
+  const state = { subject: null, grade: null, tag: null, search: "", sort: "", view: "", present: false };
 
   // ---------- DOM ----------
   const el = {
@@ -67,6 +68,7 @@
     resultCount: document.getElementById("resultCount"),
     clearFilters: document.getElementById("clearFilters"),
     shareSet: document.getElementById("shareSet"),
+    projectionBtn: document.getElementById("projectionBtn"),
     fullscreenBtn: document.getElementById("fullscreenBtn"),
     iframeWrap: document.querySelector(".iframe-wrap"),
     emptyState: document.getElementById("emptyState"),
@@ -241,6 +243,7 @@
     state.search = p.get("q") || "";
     state.sort = p.get("sort") || "";
     state.view = p.get("view") || "";
+    state.present = p.get("present") === "1";
     if (el.search) el.search.value = state.search;
     if (el.sortSelect) el.sortSelect.value = state.sort;
   }
@@ -253,6 +256,7 @@
     if (state.search.trim()) p.set("q", state.search.trim());
     if (state.sort) p.set("sort", state.sort);
     if (state.view) p.set("view", state.view);
+    if (state.present) p.set("present", "1");
     const qs = p.toString();
     const url = location.pathname + (qs ? "?" + qs : "") + location.hash;
     if (history.replaceState) history.replaceState(history.state, "", url);
@@ -603,6 +607,23 @@
   if (el.viewFav) el.viewFav.addEventListener("click", function () { toggleView("fav"); });
   if (el.viewRecent) el.viewRecent.addEventListener("click", function () { toggleView("recent"); });
 
+  // ---------- โหมดครูฉายจอ ----------
+  // ขยายตัวอักษร/การ์ดให้เด็กหลังห้องอ่านออก + ซ่อนของที่ไม่ได้ใช้ตอนฉาย
+  // เก็บใน URL (?present=1) ครูจึง bookmark ไว้ที่เครื่องฉายได้ และไม่หลุดเมื่อรีเฟรช
+  function applyProjection() {
+    document.body.classList.toggle("is-projection", state.present);
+    if (!el.projectionBtn) return;
+    el.projectionBtn.setAttribute("aria-pressed", state.present ? "true" : "false");
+    el.projectionBtn.textContent = state.present ? "📺 ออกจากโหมดฉายจอ" : "📺 โหมดฉายจอ";
+  }
+  if (el.projectionBtn) {
+    el.projectionBtn.addEventListener("click", function () {
+      state.present = !state.present;
+      applyProjection();
+      writeFiltersToUrl();
+    });
+  }
+
   el.clearFilters.addEventListener("click", function () {
     state.subject = null;
     state.grade = null;
@@ -849,6 +870,7 @@
   if (el.tagChips) buildChips(el.tagChips, tags, "tag");
   if (el.tagFilterGroup) el.tagFilterGroup.hidden = tags.length === 0;
   setupTagCollapse(tags);
+  applyProjection();
   syncChips();
   render();
   openFromHash();

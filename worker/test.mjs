@@ -81,6 +81,45 @@ const sent = JSON.parse(ghCalls[0].body);
 ok(sent.sha==="oldsha" && sent.branch==="main" && sent.message==="m", "ส่ง sha/branch/message ครบ (conflict detection ยังทำงาน)");
 ok(Buffer.from(sent.content,"base64").toString("utf8")==="ประกาศไทย", "encode ภาษาไทยเป็น base64 ถูกต้อง");
 
+// ---- /api/history (ประวัติการแก้ไข) ----
+// ไม่มี session → 401 และต้องไม่แตะ GitHub เลย
+ghCalls=[];
+r = await call("/api/history?path=games.js&ref=main", {headers:{Origin:env.SITE_ORIGIN}});
+ok(r.status===401 && ghCalls.length===0, "/api/history ไม่มี session → 401 ไม่แตะ GitHub");
+
+// cookie ถูกแต่ Origin ผิด → 403 (กัน CSRF เหมือนเส้นทางอื่น)
+ghCalls=[];
+r = await call("/api/history?path=games.js", {headers:{Cookie:"ghsess="+good, Origin:"https://evil.example"}});
+ok(r.status===403 && ghCalls.length===0, "/api/history Origin ผิด → 403");
+
+// path นอกรายการที่อนุญาต → 400 ก่อนถึง GitHub
+for (const bad of [".github/workflows/ci.yml", "admin.js", "../secrets"]) {
+  ghCalls=[];
+  r = await call("/api/history?path="+encodeURIComponent(bad), {headers:H});
+  ok(r.status===400 && ghCalls.length===0, `/api/history "${bad}" → 400 ไม่แตะ GitHub`);
+}
+
+// เส้นทางปกติ: คืนเฉพาะฟิลด์ที่หน้า admin ใช้ ไม่ส่ง payload ดิบต่อ
+globalThis.fetch = async (url, opts={}) => {
+  ghCalls.push({ url: String(url), method: opts.method||"GET" });
+  return new Response(JSON.stringify([
+    { sha:"sha1", commit:{ author:{ date:"2026-07-30T02:00:00Z", name:"ครู", email:"secret@example.com" }, message:"อัปเดตรายการเกม" },
+      author:{ login:"kennvbvb" } },
+  ]), { status:200, headers:{"Content-Type":"application/json"} });
+};
+ghCalls=[];
+r = await call("/api/history?path=games.js&ref=main&limit=5", {headers:H});
+j = await r.json();
+ok(r.status===200 && j.commits.length===1 && j.commits[0].sha==="sha1", "/api/history คืนรายการ commit");
+ok(ghCalls[0].url.includes("/repos/kennvbvb/allgamespnp/commits") && ghCalls[0].url.includes("per_page=5"),
+  "/api/history ยิงไป repo ที่ล็อกไว้ + ส่ง per_page ตามที่ขอ");
+ok(!JSON.stringify(j).includes("secret@example.com"), "/api/history ไม่ส่งอีเมลผู้แก้ต่อให้เบราว์เซอร์");
+
+// limit ต้องถูกจำกัดเพดาน กันขอทีเดียวเป็นพัน
+ghCalls=[];
+await call("/api/history?path=games.js&limit=9999", {headers:H});
+ok(ghCalls[0].url.includes("per_page=30"), "/api/history จำกัด limit ไว้ที่ 30");
+
 // Origin ผิด → 403 แม้ cookie ถูก
 ghCalls=[];
 r = await call("/api/commit", {method:"POST", headers:{Cookie:"ghsess="+good, Origin:"https://evil.example","Content-Type":"application/json"},

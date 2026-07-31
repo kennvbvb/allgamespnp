@@ -898,3 +898,80 @@ body.modal-open {
   .link-btn { color: #7cb0ff; }
   :root { --focus-ring: #7cb0ff; }
 }
+
+/* ---------- โหมดครูฉายจอ (?present=1) ----------
+   ขยายเฉพาะสิ่งที่เด็กหลังห้องต้องอ่าน แล้วซ่อนของที่ไม่ได้ใช้ตอนฉาย
+   ไม่แตะค่าสีเลย — contrast ที่ผ่าน WCAG AA อยู่แล้วจึงไม่เปลี่ยน
+   ใช้ specificity 2 ชั้น (body.is-projection X) เพื่อชนะกฎในบล็อกมือถือด้านบน */
+body.is-projection .subtitle,
+body.is-projection .site-footer,
+body.is-projection #installBtn,
+body.is-projection .iframe-hint {
+  display: none;
+}
+
+body.is-projection .container {
+  max-width: 1600px;
+}
+
+/* บีบส่วนหัว/ตัวกรองให้เตี้ยลง จะได้เห็นการ์ดเกมมากขึ้นในหนึ่งหน้าจอฉาย */
+body.is-projection .site-header {
+  padding: 16px 16px 14px;
+}
+
+body.is-projection .container {
+  padding-top: 14px;
+}
+
+body.is-projection .filters {
+  gap: 10px;
+}
+
+body.is-projection .site-header h1 {
+  font-size: clamp(1.9rem, 4vw, 2.8rem);
+}
+
+body.is-projection #searchInput {
+  font-size: 1.2rem;
+}
+
+body.is-projection .game-grid {
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+body.is-projection .game-card {
+  padding: 26px;
+  gap: 14px;
+}
+
+body.is-projection .card-emoji { font-size: 3.6rem; }
+body.is-projection .card-title { font-size: 1.7rem; }
+body.is-projection .card-desc { font-size: 1.2rem; }
+body.is-projection .card-cta { font-size: 1.1rem; padding: 11px 22px; }
+body.is-projection .card-meta { font-size: 1rem; }
+body.is-projection .card-badge { font-size: 0.95rem; }
+body.is-projection .tag { font-size: 1rem; padding: 4px 12px; }
+
+/* ตัวควบคุมยังต้องกดได้จากระยะไกล — ขยาย ไม่ซ่อน (ครูต้องออกจากโหมดนี้ได้) */
+body.is-projection .chip { font-size: 1.15rem; padding: 10px 20px; }
+body.is-projection .chip-count { font-size: 1rem; }
+body.is-projection .filter-label { font-size: 1.15rem; }
+body.is-projection #resultCount,
+body.is-projection .link-btn,
+body.is-projection .sort-label,
+body.is-projection .sort-select {
+  font-size: 1.1rem;
+}
+
+/* หน้าต่างเกม: กินพื้นที่จอฉายให้เต็มที่
+   จำกัดไว้ที่จอกว้างเท่านั้น — บนมือถือโมดัลเต็มจออยู่แล้ว (บล็อก max-width:560px)
+   ถ้าใส่ 92vh ทับลงไปจะกลายเป็นย่อจอให้เล็กลง */
+@media (min-width: 561px) {
+  body.is-projection .modal-panel {
+    width: min(96vw, 100%);
+    height: 92vh;
+  }
+}
+
+body.is-projection .modal-header h2 { font-size: 1.6rem; }

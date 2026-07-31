@@ -116,3 +116,20 @@ openssl rand -base64 32
 - cookie ตั้งเป็น `SameSite=None` เพราะหน้าเว็บ (`github.io`) กับ worker (`workers.dev`) อยู่ต่าง site จึงจำเป็น — ชดเชยด้วยการ **ตรวจ `Origin` ทุก request ที่เปลี่ยนข้อมูล**
 - `scope` ที่ขอจาก GitHub คือ `public_repo` (พอสำหรับ commit ไฟล์ใน repo สาธารณะ) แต่ worker บังคับให้เขียนได้แค่ repo และไฟล์ที่กำหนดไว้เท่านั้น
 - ถ้าอยากให้ CSP เข้มขึ้น: แก้ `connect-src` ใน `admin.html` จาก `https://*.workers.dev` เป็น URL worker ของคุณตรงๆ
+
+---
+
+## เส้นทางที่ worker เปิดให้ใช้
+
+| เส้นทาง | หน้าที่ | ต้องล็อกอิน | ตรวจ Origin |
+|---|---|---|---|
+| `GET /auth/login` | พาไปหน้าอนุญาตของ GitHub | – | – |
+| `GET /auth/callback` | แลกรหัสเป็น session แล้วส่งกลับหน้า admin | – | – |
+| `POST /auth/logout` | ล้าง session | – | ✓ |
+| `GET /api/me` | บอกว่าใครล็อกอินอยู่ | ✓ | – |
+| `GET /api/file` | อ่านไฟล์ (`ref` = branch หรือ sha ของ commit เก่า) | ✓ | ✓ |
+| `GET /api/history` | รายชื่อ commit ล่าสุดของไฟล์ (ใช้กับ "ประวัติการแก้ไข") | ✓ | ✓ |
+| `POST /api/commit` | เขียนไฟล์กลับขึ้น repo | ✓ | ✓ |
+
+ทุกเส้นทางที่แตะไฟล์จำกัดไว้เฉพาะ `games.js` และ `announcement.js` เท่านั้น (ตัวแปร `ALLOWED_PATHS` ใน `index.js`)
+`/api/history` ส่งกลับเฉพาะ `sha` / เวลา / ชื่อผู้แก้ / ข้อความ commit — ไม่ส่งข้อมูลดิบจาก GitHub ต่อ (เช่น อีเมลผู้แก้)

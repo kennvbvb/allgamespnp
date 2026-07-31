@@ -49,6 +49,9 @@
     btnCommit: $("btnCommit"), btnReload: $("btnReload"), commitStatus: $("commitStatus"),
     btnPreview: $("btnPreview"), btnPreviewSticky: $("btnPreviewSticky"),
     btnExport: $("btnExport"), btnImport: $("btnImport"), importBox: $("importBox"),
+    importFile: $("importFile"),
+    historyBox: $("historyBox"), historyList: $("historyList"),
+    historyStatus: $("historyStatus"), btnHistoryReload: $("btnHistoryReload"),
     annEnabled: $("annEnabled"), annTitle: $("annTitle"), annMessage: $("annMessage"),
     annImportant: $("annImportant"),
     btnSaveAnnounce: $("btnSaveAnnounce"), btnReloadAnnounce: $("btnReloadAnnounce"),
@@ -353,11 +356,13 @@
     };
   }
 
-  // ดึงไฟล์ปัจจุบัน → คืน { sha, text }
+  // ดึงไฟล์ → คืน { sha, text }
+  // ref = branch (ค่าเริ่มต้น) หรือ sha ของ commit เก่า สำหรับดูย้อนหลัง
   // (โหมด worker: เรียกผ่าน worker ไม่ต้องมี token ในเบราว์เซอร์)
-  function ghGetFile(c, path) {
+  function ghGetFile(c, path, ref) {
+    ref = ref || c.branch;
     if (usingWorker()) {
-      return wfetch("/api/file?path=" + encodeURIComponent(path) + "&ref=" + encodeURIComponent(c.branch))
+      return wfetch("/api/file?path=" + encodeURIComponent(path) + "&ref=" + encodeURIComponent(ref))
         .then(function (r) {
           return r.json().catch(function () { return {}; }).then(function (j) {
             if (r.status === 401) throw new Error("ยังไม่ได้ล็อกอิน — กด “เข้าสู่ระบบด้วย GitHub” ก่อน");
@@ -366,7 +371,7 @@
           });
         });
     }
-    const url = apiUrl(c, path) + "?ref=" + encodeURIComponent(c.branch);
+    const url = apiUrl(c, path) + "?ref=" + encodeURIComponent(ref);
     return fetch(url, { headers: ghHeaders(c), cache: "no-store" }).then(function (r) {
       if (r.status === 404) return { sha: null, text: null };
       if (!r.ok) return r.json().catch(function () { return {}; }).then(function (j) {
@@ -374,6 +379,39 @@
       });
       return r.json().then(function (j) {
         return { sha: j.sha, text: j.content ? b64ToUtf8(j.content) : null };
+      });
+    });
+  }
+
+  // รายการ commit ล่าสุดที่แตะไฟล์นี้ → คืน [{ sha, date, login, message }]
+  // ใช้ seam เดียวกับ ghGetFile: โหมด worker ไม่ต้องมี token ในเบราว์เซอร์
+  function ghListCommits(c, path, limit) {
+    limit = limit || 10;
+    const qs = "path=" + encodeURIComponent(path) +
+      "&ref=" + encodeURIComponent(c.branch) + "&limit=" + limit;
+    if (usingWorker()) {
+      return wfetch("/api/history?" + qs).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (j) {
+          if (r.status === 401) throw new Error("ยังไม่ได้ล็อกอิน — กด “เข้าสู่ระบบด้วย GitHub” ก่อน");
+          if (!r.ok) throw new Error(j.error || "โหลดประวัติไม่สำเร็จ (" + r.status + ")");
+          return Array.isArray(j.commits) ? j.commits : [];
+        });
+      });
+    }
+    const url = "https://api.github.com/repos/" + encodeURIComponent(c.owner) + "/" +
+      encodeURIComponent(c.repo) + "/commits?path=" + encodeURIComponent(path) +
+      "&sha=" + encodeURIComponent(c.branch) + "&per_page=" + limit;
+    return fetch(url, { headers: ghHeaders(c), cache: "no-store" }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (!r.ok) throw new Error("โหลดประวัติไม่สำเร็จ (" + r.status + ") " + (j.message || ""));
+        return (Array.isArray(j) ? j : []).map(function (x) {
+          return {
+            sha: x.sha,
+            date: x.commit && x.commit.author ? x.commit.author.date : "",
+            login: (x.author && x.author.login) || (x.commit && x.commit.author && x.commit.author.name) || "",
+            message: (x.commit && x.commit.message) || "",
+          };
+        });
       });
     });
   }
@@ -1173,14 +1211,15 @@
   // (เปิดแบบไม่มี noopener เพื่อให้แท็บใหม่ได้ค่า sessionStorage ที่คัดลอกจากแท็บนี้)
   const PREVIEW_GAMES = "gamehub_preview_games";
   const PREVIEW_ANN = "gamehub_preview_announcement";
-  function openPreview() {
-    ensureIds(games);
+  function openPreviewWith(list) {
+    ensureIds(list);
     try {
-      sessionStorage.setItem(PREVIEW_GAMES, JSON.stringify(games));
+      sessionStorage.setItem(PREVIEW_GAMES, JSON.stringify(list));
       sessionStorage.setItem(PREVIEW_ANN, JSON.stringify(readAnnouncementForm()));
     } catch (e) { /* ถ้าเก็บไม่ได้ก็ยังเปิดพรีวิวเวอร์ชันไฟล์ปัจจุบันได้ */ }
     window.open("index.html?preview=1", "_blank");
   }
+  function openPreview() { openPreviewWith(games); }
   if (el.btnPreview) el.btnPreview.addEventListener("click", openPreview);
   if (el.btnPreviewSticky) el.btnPreviewSticky.addEventListener("click", openPreview);
 
@@ -1189,17 +1228,20 @@
     const blob = new Blob([JSON.stringify(games, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "games-backup.json";
+    // ใส่วันที่ในชื่อไฟล์ ครูจะได้รู้ว่าไฟล์ไหนใหม่กว่าตอนเก็บไว้หลายรอบ
+    a.download = "games-backup-" + todayISO() + ".json";
     a.click();
     URL.revokeObjectURL(a.href);
   });
 
-  el.btnImport.addEventListener("click", function () {
-    const raw = el.importBox.value.trim();
-    if (!raw) { setStatus(el.commitStatus, "วาง JSON ในช่องก่อน", "err"); return; }
+  // ตรวจ + แทนที่รายการด้วย JSON ที่ได้มา (ใช้ร่วมกันทั้งช่องวางและไฟล์ที่เลือก)
+  // คืน true เมื่อนำเข้าสำเร็จจริง
+  function applyImportedJson(raw, sourceLabel) {
+    raw = String(raw || "").trim();
+    if (!raw) { setStatus(el.commitStatus, "ไม่มีข้อมูลให้นำเข้า", "err"); return false; }
     let data;
-    try { data = JSON.parse(raw); } catch (e) { setStatus(el.commitStatus, "JSON ไม่ถูกต้อง", "err"); return; }
-    if (!Array.isArray(data)) { setStatus(el.commitStatus, "JSON ต้องเป็น array ของเกม", "err"); return; }
+    try { data = JSON.parse(raw); } catch (e) { setStatus(el.commitStatus, "JSON ไม่ถูกต้อง" + sourceLabel, "err"); return false; }
+    if (!Array.isArray(data)) { setStatus(el.commitStatus, "JSON ต้องเป็น array ของเกม", "err"); return false; }
 
     const result = validateImportRecords(data);
     if (result.errors.length) {
@@ -1207,17 +1249,156 @@
       const more = result.errors.length > 8 ? "\n…และอีก " + (result.errors.length - 8) + " รายการ" : "";
       setStatus(el.commitStatus, "❌ นำเข้าไม่ได้ พบ " + result.errors.length + " ข้อผิดพลาด — ดูรายละเอียดในกล่องแจ้งเตือน", "err");
       alert("ข้อมูลนำเข้าไม่ผ่านการตรวจ:\n\n" + show + more);
-      return;
+      return false;
     }
-    if (!confirm("แทนที่รายการปัจจุบันด้วยข้อมูลที่วาง (" + result.clean.length + " เกม)?")) return;
+    if (!confirm("แทนที่รายการปัจจุบัน (" + games.length + " เกม) ด้วยข้อมูลที่นำเข้า (" + result.clean.length + " เกม)?")) return false;
     games = result.clean;
     ensureIds(games);
-    el.importBox.value = ""; // เคลียร์ช่องวาง จะได้ไม่นับเป็นงานค้าง
     renderList();
     resetForm();
     setDirty(true);
     setStatus(el.commitStatus, "นำเข้าแล้ว (" + games.length + " เกม) — กด “บันทึกขึ้นเว็บ” เพื่อให้ถาวร", "warn");
+    return true;
+  }
+
+  el.btnImport.addEventListener("click", function () {
+    if (applyImportedJson(el.importBox.value, "")) {
+      el.importBox.value = ""; // เคลียร์ช่องวาง จะได้ไม่นับเป็นงานค้าง
+    }
   });
+
+  // กู้คืนจากไฟล์สำรองโดยตรง ไม่ต้องเปิดไฟล์มา copy-paste เอง
+  if (el.importFile) {
+    el.importFile.addEventListener("change", function () {
+      const file = el.importFile.files && el.importFile.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function () {
+        applyImportedJson(reader.result, " (ไฟล์ " + file.name + ")");
+        el.importFile.value = ""; // เลือกไฟล์เดิมซ้ำได้
+      };
+      reader.onerror = function () {
+        setStatus(el.commitStatus, "อ่านไฟล์ไม่สำเร็จ", "err");
+        el.importFile.value = "";
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  // ---------- ประวัติการแก้ไข + ย้อนเวอร์ชัน ----------
+  // GitHub เก็บทุก commit ไว้อยู่แล้ว ส่วนนี้แค่หยิบมาให้ครูเห็นและกดย้อนได้
+  // โดยไม่ต้องเข้าใจ git — และ "ย้อน" หมายถึงโหลดเนื้อไฟล์เก่ามาเป็นงานที่ยังไม่บันทึก
+  // ไม่ใช่การ commit ทันที ครูจึงยังตรวจด้วยปุ่มดูตัวอย่างก่อนได้
+  let historyLoaded = false;
+
+  function formatThaiDateTime(iso) {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "(ไม่ทราบเวลา)";
+    return d.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" }) +
+      " " + d.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) + " น.";
+  }
+
+  function renderHistory(list) {
+    if (!el.historyList) return;
+    el.historyList.innerHTML = "";
+    if (!list.length) {
+      setStatus(el.historyStatus, "ยังไม่มีประวัติของไฟล์นี้บน GitHub", "warn");
+      return;
+    }
+    list.forEach(function (cm, i) {
+      const li = document.createElement("li");
+      li.className = "history-item";
+      li.dataset.sha = cm.sha;
+      // แถวบนสุด = เวอร์ชันที่อยู่บนเว็บตอนนี้ ไม่ต้องมีปุ่มกู้คืน
+      const isCurrent = i === 0;
+      li.innerHTML =
+        '<div class="history-main">' +
+          '<span class="history-when">' + escapeHtml(formatThaiDateTime(cm.date)) + "</span>" +
+          (cm.login ? '<span class="history-who">โดย ' + escapeHtml(cm.login) + "</span>" : "") +
+          '<span class="history-msg">' + escapeHtml(String(cm.message || "").split("\n")[0]) + "</span>" +
+        "</div>" +
+        (isCurrent ? '<span class="history-current">เวอร์ชันปัจจุบัน</span>' : "") +
+        '<div class="history-actions">' +
+          '<button type="button" class="btn btn-ghost" data-hact="preview">👁 ดูตัวอย่าง</button>' +
+          (isCurrent ? "" : '<button type="button" class="btn btn-ghost" data-hact="restore">↩ กู้คืน</button>') +
+        "</div>";
+      li.querySelectorAll("button[data-hact]").forEach(function (btn) {
+        btn.addEventListener("click", function () { historyAction(btn.dataset.hact, cm); });
+      });
+      el.historyList.appendChild(li);
+    });
+    setStatus(el.historyStatus, "แสดง " + list.length + " รายการล่าสุด", "ok");
+  }
+
+  function loadHistory() {
+    const c = cfg();
+    const notReady = notReadyMsg();
+    if (notReady) { setStatus(el.historyStatus, "❌ " + notReady, "err"); return; }
+    setStatus(el.historyStatus, "กำลังโหลดประวัติ…", "");
+    ghListCommits(c, c.path).then(function (list) {
+      historyLoaded = true;
+      renderHistory(list);
+    }).catch(function (err) {
+      setStatus(el.historyStatus, "❌ " + err.message, "err");
+    });
+  }
+
+  // ดึงเนื้อไฟล์ ณ commit นั้น แล้วแกะเป็นรายการเกม
+  function fetchGamesAt(sha) {
+    const c = cfg();
+    return ghGetFile(c, c.path, sha).then(function (res) {
+      if (res.text === null) throw new Error("ไม่พบไฟล์ในเวอร์ชันนั้น");
+      const parsed = parseGamesFromText(res.text);
+      if (!parsed) throw new Error("อ่านข้อมูลจากเวอร์ชันนั้นไม่ได้ (รูปแบบไม่ตรง)");
+      return parsed;
+    });
+  }
+
+  function historyAction(act, cm) {
+    if (act === "preview") {
+      setStatus(el.historyStatus, "กำลังเปิดตัวอย่างเวอร์ชันนี้…", "");
+      fetchGamesAt(cm.sha).then(function (list) {
+        openPreviewWith(deepCopy(list));
+        setStatus(el.historyStatus, "เปิดตัวอย่างในแท็บใหม่แล้ว (" + list.length + " เกม)", "ok");
+      }).catch(function (err) {
+        setStatus(el.historyStatus, "❌ " + err.message, "err");
+      });
+      return;
+    }
+    if (act !== "restore") return;
+    if (dirty && !confirm("มีการแก้ไขที่ยังไม่บันทึก การกู้คืนจะทับของที่แก้ไว้ ยืนยันไหม?")) return;
+    setStatus(el.historyStatus, "กำลังกู้คืน…", "");
+    fetchGamesAt(cm.sha).then(function (list) {
+      if (!confirm("กู้คืนรายการเป็นเวอร์ชันวันที่ " + formatThaiDateTime(cm.date) +
+        " (" + list.length + " เกม)?\n\nจะยังไม่ขึ้นเว็บจนกว่าจะกด “บันทึกขึ้นเว็บ”")) {
+        setStatus(el.historyStatus, "ยกเลิกการกู้คืน", "");
+        return;
+      }
+      games = list;
+      ensureIds(games);
+      // ตั้งใจไม่แตะ gamesBaseSha — ต้องคงเป็น sha ของเวอร์ชันล่าสุดที่โหลดมา
+      // ไม่ใช่ sha ของ commit เก่า ไม่งั้นการตรวจจับการแก้ชนกันตอน commit จะพัง
+      // และอาจเขียนทับงานที่คนอื่นบันทึกไว้ระหว่างนั้นแบบเงียบๆ
+      selected.clear();
+      renderList();
+      resetForm();
+      setDirty(true);
+      setStatus(el.historyStatus,
+        "✅ กู้คืนเป็นเวอร์ชัน " + formatThaiDateTime(cm.date) + " แล้ว (" + games.length +
+        " เกม) — ตรวจแล้วกด “บันทึกขึ้นเว็บ” เพื่อให้ถาวร", "ok");
+      setStatus(el.commitStatus, "กู้คืนเวอร์ชันเก่ามาแล้ว — กด “บันทึกขึ้นเว็บ” เพื่อให้ถาวร", "warn");
+    }).catch(function (err) {
+      setStatus(el.historyStatus, "❌ " + err.message, "err");
+    });
+  }
+
+  // โหลดตอนกางกล่องครั้งแรกเท่านั้น — ไม่ยิง API ทิ้งไว้ตอนเปิดหน้า
+  if (el.historyBox) {
+    el.historyBox.addEventListener("toggle", function () {
+      if (el.historyBox.open && !historyLoaded) loadHistory();
+    });
+  }
+  if (el.btnHistoryReload) el.btnHistoryReload.addEventListener("click", loadHistory);
 
   // ---------- ประกาศหน้าเว็บ ----------
   function buildAnnouncementJs(obj) {

@@ -259,10 +259,27 @@
       <details class="help backup">
         <summary>สำรอง/กู้คืนข้อมูล (JSON)</summary>
         <div class="btn-row">
-          <button type="button" id="btnExport" class="btn btn-ghost">⬇️ ดาวน์โหลด JSON</button>
+          <button type="button" id="btnExport" class="btn btn-ghost">⬇️ ดาวน์โหลดไฟล์สำรอง</button>
+        </div>
+        <label class="field">
+          <span>กู้คืนจากไฟล์ที่เคยดาวน์โหลดไว้</span>
+          <input type="file" id="importFile" accept="application/json,.json" />
+        </label>
+        <p class="hint">เลือกไฟล์แล้วระบบจะถามยืนยันก่อนแทนที่รายการ — ยังไม่ขึ้นเว็บจนกว่าจะกด “บันทึกขึ้นเว็บ”</p>
+        <div class="btn-row">
           <button type="button" id="btnImport" class="btn btn-ghost">⬆️ นำเข้าจาก JSON ที่วาง</button>
         </div>
-        <textarea id="importBox" rows="5" placeholder='วาง JSON ที่นี่ แล้วกด "นำเข้าจาก JSON ที่วาง"'></textarea>
+        <textarea id="importBox" rows="5" placeholder='หรือวาง JSON ที่นี่ แล้วกด "นำเข้าจาก JSON ที่วาง"'></textarea>
+      </details>
+
+      <details class="help history" id="historyBox">
+        <summary>ประวัติการแก้ไข (ย้อนกลับได้)</summary>
+        <p class="hint">รายการบันทึกล่าสุดของไฟล์เกม — กดกู้คืนแล้วรายการจะกลับไปเป็นเวอร์ชันนั้น แต่ยังไม่ขึ้นเว็บจนกว่าจะกด “บันทึกขึ้นเว็บ”</p>
+        <div class="btn-row">
+          <button type="button" id="btnHistoryReload" class="btn btn-ghost">↻ โหลดประวัติ</button>
+        </div>
+        <p class="status" id="historyStatus"></p>
+        <ol class="history-list" id="historyList"></ol>
       </details>
     </section>
 
