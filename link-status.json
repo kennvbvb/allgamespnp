@@ -1,6 +1,83 @@
 {
-  "checkedAt": null,
+  "checkedAt": "2026-08-03T04:26:07.687Z",
+  "games": {
+    "game": {
+      "ok": true,
+      "status": "HTTP 200"
+    },
+    "game-2": {
+      "ok": true,
+      "status": "HTTP 200"
+    },
+    "game-3": {
+      "ok": true,
+      "status": "HTTP 200"
+    },
+    "game-4": {
+      "ok": true,
+      "status": "HTTP 200"
+    },
+    "game-5": {
+      "ok": true,
+      "status": "HTTP 200"
+    },
+    "game-6": {
+      "ok": true,
+      "status": "HTTP 200"
+    },
+    "game-7": {
+      "ok": true,
+      "status": "HTTP 200"
+    },
+    "game-8": {
+      "ok": true,
+      "status": "HTTP 200"
+    },
+    "game-9": {
+      "ok": true,
+      "status": "HTTP 200"
+    },
+    "game-10": {
+      "ok": true,
+      "status": "HTTP 200"
+    },
+    "game-11": {
+      "ok": true,
+      "status": "HTTP 200"
+    },
+    "game-12": {
+      "ok": true,
+      "status": "HTTP 200"
+    },
+    "game-13": {
+      "ok": true,
+      "status": "HTTP 200"
+    },
+    "game-14": {
+      "ok": true,
+      "status": "HTTP 200"
+    },
+    "game-15": {
+      "ok": true,
+      "status": "HTTP 200"
+    },
+    "game-16": {
+      "ok": true,
+      "status": "HTTP 200"
+    },
+    "game-17": {
+      "ok": true,
+      "status": "HTTP 200"
+    },
+    "game-18": {
+      "ok": true,
+      "status": "HTTP 200"
+    },
+    "game-19": {
+      "ok": true,
+      "status": "HTTP 200"
+    }
+  },
   "brokenCount": 0,
-  "total": 0,
-  "games": {}
+  "total": 19
 }
