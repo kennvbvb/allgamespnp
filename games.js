@@ -321,6 +321,30 @@ const GAMES = [
     "tags": [
       "ศาสนา"
     ]
+  },
+  {
+    "id": "game-20",
+    "title": "กระดานแข่งขัน ศาสนาคริสต์ & อิสลาม",
+    "description": "",
+    "subject": "สังคมศึกษาฯ",
+    "grades": [
+      "ป.6"
+    ],
+    "url": "https://script.google.com/macros/s/AKfycbzQ2HDvS4dZ_My0vgvOZ-5U6ryu1yUr_zCNos5cstJpvKuorgKXh-py4SU6BSzj5sgl7Q/exec",
+    "color": "#e5891f",
+    "added": "2026-08-25"
+  },
+  {
+    "id": "game-21",
+    "title": "เกมกระดานแข่งขัน ศาสนิกชนที่ดี",
+    "description": "",
+    "subject": "สังคมศึกษาฯ",
+    "grades": [
+      "ป.4"
+    ],
+    "url": "https://script.google.com/macros/s/AKfycbyXZ0FMKfHfHXFi5S6DlkAIzm2uPjSrlqySQzPbcVTETU2cmA5hxbyp7YD-TF4zUlz4pA/exec",
+    "color": "#b461db",
+    "added": "2026-08-25"
   }
 ];
 
