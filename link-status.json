@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-08-24T02:20:26.991Z",
+  "checkedAt": "2026-08-31T06:34:05.989Z",
   "games": {
     "game": {
       "ok": true,
@@ -76,8 +76,16 @@
     "game-19": {
       "ok": true,
       "status": "HTTP 200"
+    },
+    "game-20": {
+      "ok": true,
+      "status": "HTTP 200"
+    },
+    "game-21": {
+      "ok": true,
+      "status": "HTTP 200"
     }
   },
   "brokenCount": 0,
-  "total": 19
+  "total": 21
 }
